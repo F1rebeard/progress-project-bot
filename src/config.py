@@ -1,5 +1,9 @@
 import logging
 
+from aiogram import Bot, Dispatcher
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
+from aiogram.fsm.storage.memory import MemoryStorage
 from dotenv import load_dotenv
 from pydantic import PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -13,8 +17,10 @@ load_dotenv()
 
 class Settings(BaseSettings):
     DATABASE_URL: PostgresDsn
-    BOT_TOKEN: str
     DEBUG: bool = False
+    ADMIN_IDS: list[int]
+    BOT_TOKEN: str
+
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
@@ -27,3 +33,9 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+bot = Bot(
+    token=settings.BOT_TOKEN,
+    default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+    protect_content=True,
+)
+dp = Dispatcher(storage=MemoryStorage())
