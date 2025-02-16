@@ -37,7 +37,7 @@ select = [
     "UP",
     "RUF"
 ]
-ignore = ["E501"]
+ignore = ["E501", "RUF001"]
 
 [tool.isort]
 profile = "black"
