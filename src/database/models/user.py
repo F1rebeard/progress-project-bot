@@ -1,9 +1,13 @@
 import enum
+from typing import TYPE_CHECKING
 
 from sqlalchemy import BigInteger, Enum, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.database.models import Base, Biometric, CuratorUser, Subscription, WorkoutResult
+from src.database.models import Base
+
+if TYPE_CHECKING:
+ from src.database.models import Biometric, CuratorUser, Subscription, WorkoutResult
 
 
 class UserLevel(str, enum.Enum):
@@ -55,7 +59,7 @@ class User(Base):
     # one-to-many
     workout_results: Mapped[list["WorkoutResult"]] = relationship(
         "WorkoutResult",
-        back_populates="users",
+        back_populates="user",
         cascade="all, delete, delete-orphan",
     )
     curator: Mapped["CuratorUser | None"] = relationship(

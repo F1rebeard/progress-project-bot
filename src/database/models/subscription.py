@@ -1,14 +1,17 @@
 import enum
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Date, Enum, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.database.models import Base, Payment, User
+from src.database.models import Base
 
+if TYPE_CHECKING:
+    from src.database.models import Payment, User
 
 class SubscriptionType(str, enum.Enum):
     STANDARD = "Базовая"
-    WITH_CURATOR = "С куратором" # noqa: RUF001
+    WITH_CURATOR = "С куратором"
     START_PROGRAM = "Полный Старт"
     ONE_MONTH_START = "Месяц Старт"
 

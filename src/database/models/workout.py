@@ -1,8 +1,13 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import BigInteger, Date, Enum, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.database.models import Base, User
+from src.database.models import Base
 from src.database.models.user import UserLevel
+
+if TYPE_CHECKING:
+    from src.database.models import User
 
 
 class Workout(Base):
@@ -12,18 +17,19 @@ class Workout(Base):
     level: Mapped[UserLevel] = mapped_column(Enum(UserLevel), nullable=False)
 
     # Relationships
-    workout_results: Mapped["WorkoutResult"] = relationship(
+    workout_results: Mapped[list["WorkoutResult"]] = relationship(
         "WorkoutResult",
         back_populates="workout",
+        cascade="all, delete-orphan",
     )
 
 class WorkoutResult(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     result: Mapped[str] = mapped_column(Text, nullable=False)
-    workout_id: Mapped[int] = mapped_column(ForeignKey("workout.id", on_delete="CASCADE"),
+    workout_id: Mapped[int] = mapped_column(ForeignKey("workouts.id", ondelete="CASCADE"),
                                             nullable=False)
     user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.telegram_id", on_delete="CASCADE"), nullable=False
+        ForeignKey("users.telegram_id", ondelete="CASCADE"), nullable=False
     )
 
     # Relationships

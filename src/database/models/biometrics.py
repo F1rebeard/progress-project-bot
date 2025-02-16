@@ -1,7 +1,12 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import BigInteger, Date, ForeignKey, Integer, Numeric
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.database.models import Base, User
+from src.database.models import Base
+
+if TYPE_CHECKING:
+    from src.database.models import User
 
 
 class Biometric(Base):

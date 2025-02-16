@@ -1,13 +1,17 @@
 import enum
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import BigInteger, DateTime, Enum, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.database.models import Base, Subscription
+from src.database.models import Base
 from src.database.models.subscription import SubscriptionType
+
+if TYPE_CHECKING:
+    from src.database.models import Subscription
 
 
 class PaymentStatus(str, enum.Enum):
