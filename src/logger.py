@@ -18,17 +18,21 @@ def setup_logging(logs_dir: str = "logs"):
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
 
-    handler = TimedRotatingFileHandler(
-        log_file, when="midnight", interval=1, backupCount=14, encoding="utf-8"
-    )
-    handler.setFormatter(
-        logging.Formatter(
-            "%(asctime)s - %(levelname)s - %(message)s", datefmt="%d-%m-%Y %H:%M:%S"
+    if not logger.handlers:
+        # File handler - logs to a file
+        file_handler = TimedRotatingFileHandler(
+            log_file, when="midnight", interval=1, backupCount=14, encoding="utf-8"
         )
-    )
-    logger.addHandler(handler)
+        file_handler.setFormatter(
+            logging.Formatter(
+                "%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+            )
+        )
+        logger.addHandler(file_handler)
 
-    # Optional logging to terminal
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(logging.Formatter("%(message)s"))
-    logger.addHandler(console_handler)
+        # Console handler - logs to the terminal
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(logging.Formatter("%(message)s"))
+        logger.addHandler(console_handler)
+
+    logging.info("✅ Logging setup complete.")

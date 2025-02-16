@@ -6,14 +6,14 @@ from aiogram.types import BotCommand, BotCommandScopeDefault
 from aiogram_dialog import setup_dialogs
 
 from src.bot.handlers.start_bot import start_command_router
-from src.config import bot, dp, settings
+from src.config import admins, bot, dp
 from src.logger import setup_logging
 from src.middleware.database_middleware import (
     DatabaseMiddlewareWithCommit,
     DatabaseMiddlewareWithoutCommit,
 )
 
-setup_logging(logs_dir="logs")
+setup_logging()
 
 
 async def set_commands():
@@ -25,7 +25,7 @@ async def set_commands():
 async def start_bot():
     """Methods with bot starting."""
     await set_commands()
-    for admin_id in settings.ADMIN_IDS:
+    for admin_id in admins:
         try:
             await bot.send_message(admin_id, "Я запущен 🥳")
         except TelegramNotFound:
@@ -37,7 +37,7 @@ async def start_bot():
 
 async def stop_bot():
     """Methods with bot stopping."""
-    for admin_id in settings.ADMIN_IDS:
+    for admin_id in admins:
         try:
             await bot.send_message(admin_id, "Я остановлен!")
         except TelegramNotFound:

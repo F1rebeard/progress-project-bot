@@ -9,9 +9,9 @@ from src.bot.keyboards.subscription import (
     renew_or_change_subscription_kb,
     subscription_selection_btn,
 )
-from src.config.bot import ADMIN_IDS
-from src.database.base import connection
-from src.database.dao import UserDAO
+from src.config import admins
+from src.dao import UserDAO
+from src.database.config import connection
 from src.database.models.subscription import SubscriptionStatus
 
 start_command_router = Router()
@@ -52,7 +52,7 @@ async def check_user_status(
     sub_end_date = None
 
     if user:
-        if telegram_id in ADMIN_IDS:
+        if telegram_id in admins:
             user_status = "admin"
             user_name = user.first_name
 
@@ -94,7 +94,7 @@ async def cmd_start(message: Message):
     (user_name, user_status, sub_status, sub_type, sub_end_date) = await check_user_status(
         telegram_id
     )
-    for admin_id in ADMIN_IDS:
+    for admin_id in admins:
         await message.answer(text=str(admin_id))
     if user_status == "admin":
         await message.answer(
