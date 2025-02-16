@@ -27,4 +27,4 @@ class Settings(BaseSettings):
         logger.debug(f"🔹 DEBUG: {self.DEBUG}")
 
 
-setting = Settings()
+settings = Settings()
