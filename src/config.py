@@ -6,7 +6,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from src.logger import setup_logging
 
-
 setup_logging()
 logger = logging.getLogger(__name__)
 load_dotenv()
