@@ -12,7 +12,6 @@ from src.bot.keyboards.subscription import (
 from src.config import admins
 from src.dao import UserDAO
 from src.database.config import connection
-from src.database.models.subscription import SubscriptionStatus
 
 start_command_router = Router()
 
@@ -24,7 +23,7 @@ async def check_user_status(
     """
     Retrieves the user's name, system status, and subscription details.
 
-    The function determines the user's state based on their database record:
+    The function determines the user's state based on their database_url record:
     - **Admin**: If the user is in `ADMIN_IDS`, they are assigned "admin" status.
     - **New User**: If no record exists, they are considered a "new_user".
     - **Pending Registration**: If a record exists but lacks a first name, yet has an
@@ -34,7 +33,7 @@ async def check_user_status(
 
     Args:
         telegram_id (int): The Telegram ID of the user.
-        session (AsyncSession): The database session for asynchronous queries.
+        session (AsyncSession): The database_url session for asynchronous queries.
 
     Returns:
         tuple[str | None, str, str | None, date | None]:
@@ -44,29 +43,39 @@ async def check_user_status(
             - The subscription status as a string (`None` if no active subscription).
             - The subscription end date (`None` if no active subscription).
     """
-    user = await UserDAO.find_one_or_none_by_id(telegram_id, session)
+
     user_status = "new_user"
     user_name = None
     sub_status = None
     sub_type = None
     sub_end_date = None
 
-    if user:
-        if telegram_id in admins:
-            user_status = "admin"
-            user_name = user.first_name
+    if telegram_id in admins:
+        user_status = "admin"
+        print(user_name, user_status, sub_status, sub_type, sub_end_date)
+        return user_name, user_status, sub_status, sub_type, sub_end_date
 
-        if user.first_name is None and user.subscription.status == SubscriptionStatus.ACTIVE:
-            user_status = "pending_registration"
+    user = await UserDAO.find_one_or_none_by_id(data_id=telegram_id, session=session)
 
-        if user.first_name and user.last_name:
-            user_name = user.first_name
-            user_status = "registered"
-            sub_status = user.subscription.status.value
-            sub_type = user.subscription.subscription_type.value
-            sub_end_date = user.subscription.end_date
+    # new user
+    if not user:
+        print(user_name, user_status, sub_status, sub_type, sub_end_date)
+        return user_name, user_status, sub_status, sub_type, sub_end_date
 
+    if not user.first_name:
+        user_status = "not_registered"
+    else:
+        user_status = "registered"
+        user_name = user.first_name
+
+    sub_status = user.subscription.status.value
+    sub_type = user.subscription.subscription_type.value
+    sub_end_date = user.subscription.end_date
+
+    print(user_name, user_status, sub_status, sub_type, sub_end_date)
     return user_name, user_status, sub_status, sub_type, sub_end_date
+
+
 
 
 @start_command_router.message(CommandStart())
@@ -85,7 +94,7 @@ async def cmd_start(message: Message):
 
     Args:
         message (Message): The incoming Telegram message.
-        session (AsyncSession): The database session for querying user details.
+        session (AsyncSession): The database_url session for querying user details.
 
     Returns:
         None: Sends an appropriate message based on the user's status.
@@ -94,8 +103,6 @@ async def cmd_start(message: Message):
     (user_name, user_status, sub_status, sub_type, sub_end_date) = await check_user_status(
         telegram_id
     )
-    for admin_id in admins:
-        await message.answer(text=str(admin_id))
     if user_status == "admin":
         await message.answer(
             text=f"💪 Привет, <b>админ</b> {user_name}!\n"

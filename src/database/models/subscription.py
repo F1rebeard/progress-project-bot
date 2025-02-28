@@ -12,8 +12,8 @@ if TYPE_CHECKING:
 class SubscriptionType(str, enum.Enum):
     STANDARD = "Базовая"
     WITH_CURATOR = "С куратором"
-    START_PROGRAM = "Полный Старт"
-    ONE_MONTH_START = "Месяц Старт"
+    START_PROGRAM = "Полная программа Старт"
+    ONE_MONTH_START = "Один месяц Старт"
 
 
 class SubscriptionStatus(str, enum.Enum):

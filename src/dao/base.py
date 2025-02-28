@@ -18,14 +18,14 @@ class BaseDAO(Generic[T]):
 
     @classmethod
     async def find_one_or_none_by_id(cls, data_id: int, session: AsyncSession) -> T:
-        """Searching only one database model by it's id.
+        """Searching only one database_url model by it's id.
 
         Args:
             data_id: id to search by.
             session: Database session object.
 
         Returns:
-            A database object if found by it's id.
+            A database_url object if found by it's id.
         """
         logger.debug(f"Поиск {cls.model.__name__} c ID: {data_id}")
         try:
@@ -37,13 +37,13 @@ class BaseDAO(Generic[T]):
     @classmethod
     async def find_one_or_none(cls, session: AsyncSession, filters: BaseModel) -> Sequence[T]:
         """
-        Searching only one database model by pydantic base model.
+        Searching only one database_url model by pydantic base model.
         Args:
             session: Database async session object.
             filters: Provided pydantic base model.
 
         Returns:
-            A database object if found.
+            A database_url object if found.
         """
         filter_dict = filters.model_dump(exclude_unset=True)
         logger.debug(f"Поиск ОДНОЙ записи {cls.model.__name__} по фильтрам {filter_dict}")
@@ -100,7 +100,7 @@ class BaseDAO(Generic[T]):
     @classmethod
     async def update_one_by_id(cls, session: AsyncSession, data_id: int, data: BaseModel):
         """
-        Update a database object found by it's id. Updated by pydantic base model.
+        Update a database_url object found by it's id. Updated by pydantic base model.
         Args:
             session: Database async session object.
             data_id: Id of object to update.
@@ -126,7 +126,7 @@ class BaseDAO(Generic[T]):
         cls, session: AsyncSession, filter_criteria: BaseModel, values: BaseModel
     ) -> int:
         """
-        Universal update many database objects by pydantic base model as filter and as new values.
+        Universal update many database_url objects by pydantic base model as filter and as new values.
         Args:
             session: Database async session
             filter_criteria: Filters by which objects should be found.
@@ -156,7 +156,7 @@ class BaseDAO(Generic[T]):
     @classmethod
     async def delete_by_id(cls, session: AsyncSession, data_id: int):
         """
-        Universal delete one database object by it's id.
+        Universal delete one database_url object by it's id.
         Args:
             session:
             data_id:

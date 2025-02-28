@@ -4,19 +4,19 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncAttrs, AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
-from src.config import settings
+from src.config import database_url, settings
 
-engine = create_async_engine(url=str(settings.DATABASE_URL), echo=settings.DEBUG)
+engine = create_async_engine(url=database_url, echo=settings.DEBUG)
 async_session_maker = async_sessionmaker(engine, class_=AsyncSession)
 
 
 def connection(isolation_level=None, commit: bool = True):
     """
-    Decorator for database session with management of isolation level and commit.
+    Decorator for database_url session with management of isolation level and commit.
     Args:
         isolation_level: isolation level of transaction
          (READ COMMITTED, SERIALIZABLE, REPEATABLE READ)
-        commit: if True, commit the changes to database after method calling.
+        commit: if True, commit the changes to database_url after method calling.
 
     """
 

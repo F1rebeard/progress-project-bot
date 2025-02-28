@@ -35,9 +35,9 @@ class User(Base):
     username: Mapped[str | None] = mapped_column(String(32), unique=True, nullable=True)
     first_name: Mapped[str | None] = mapped_column(String(64), nullable=True)
     last_name: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    e_mail: Mapped[str] = mapped_column(String(100), unique=True, nullable=True)
-    gender: Mapped[Gender] = mapped_column(Enum(Gender), nullable=True)
-    level: Mapped[UserLevel] = mapped_column(Enum(UserLevel), nullable=True)
+    e_mail: Mapped[str | None] = mapped_column(String(100), unique=True, nullable=True)
+    gender: Mapped[Gender| None] = mapped_column(Enum(Gender), nullable=True)
+    level: Mapped[UserLevel | None] = mapped_column(Enum(UserLevel), nullable=True)
     role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.USER)
 
     # Relationships

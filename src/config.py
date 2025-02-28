@@ -39,3 +39,4 @@ bot = Bot(
 )
 dp = Dispatcher(storage=MemoryStorage())
 admins = settings.ADMIN_IDS
+database_url = str(settings.DATABASE_URL)

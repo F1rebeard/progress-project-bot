@@ -1,10 +1,12 @@
 import asyncio
+import locale
 import logging
 
 from aiogram.exceptions import TelegramBadRequest, TelegramNotFound
 from aiogram.types import BotCommand, BotCommandScopeDefault
 from aiogram_dialog import setup_dialogs
 
+from src.bot.handlers.payment_dialog import payment_router, subscription_selection_dialog
 from src.bot.handlers.start_bot import start_command_router
 from src.config import admins, bot, dp
 from src.logger import setup_logging
@@ -14,6 +16,7 @@ from src.middleware.database_middleware import (
 )
 
 setup_logging()
+logger = logging.getLogger(__name__)
 
 
 async def set_commands():
@@ -48,6 +51,14 @@ async def stop_bot():
 
 
 async def main():
+    try:
+        locale.setlocale(locale.LC_TIME, "Russian_Russia.1251")
+        #-linux
+        #locale.setlocale(locale.LC_TIME, "ru_RU.UTF-8")
+        logger.info("Locale установлен в русский режим.")
+    except locale.Error:
+        logger.warning("Не удалось установить Locale в русский режим")
+
     # Middleware connection
     dp.update.middleware.register(DatabaseMiddlewareWithoutCommit())
     dp.update.middleware.register(DatabaseMiddlewareWithCommit())
@@ -57,9 +68,11 @@ async def main():
     dp.shutdown.register(stop_bot)
 
     # Routers  and dialogs register
-    setup_dialogs(dp)
     dp.include_router(start_command_router)
+    dp.include_router(payment_router)
 
+    setup_dialogs(dp)
+    dp.include_router(subscription_selection_dialog)
 
     try:
         await bot.delete_webhook(drop_pending_updates=True)
@@ -67,5 +80,5 @@ async def main():
     finally:
         await bot.session.close()
 
-
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
