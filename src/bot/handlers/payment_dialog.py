@@ -12,6 +12,7 @@ from aiogram_dialog.widgets.text import Const, Format
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.bot.keyboards.subscription import to_registration_btn
 from src.dao import PaymentDAO, SubscriptionDAO, UserDAO
 from src.database.config import connection
 from src.database.models import Payment, Subscription, User
@@ -153,6 +154,7 @@ async def process_new_subscription(
         f"Подписка <b>{chosen_plan['name']}</b> активирована.\n"
         f"📅 Действует до <b>{new_sub.end_date.strftime('%d %B %Y')}</b>.\n\n"
         f"⬇️ Осталось завершить регистрацию ",
+        reply_markup=to_registration_btn
     )
     await manager.done()
 
