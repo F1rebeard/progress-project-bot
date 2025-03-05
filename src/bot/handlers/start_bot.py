@@ -1,13 +1,16 @@
 from datetime import date
+from typing import Any
 
 from aiogram import Router
 from aiogram.filters import CommandStart
 from aiogram.types import Message
+from sqlalchemy import Date
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.bot.keyboards.subscription import (
     renew_or_change_subscription_kb,
     subscription_selection_btn,
+    to_registration_btn,
 )
 from src.config import admins
 from src.dao import UserDAO
@@ -19,7 +22,7 @@ start_command_router = Router()
 @connection(commit=False)
 async def check_user_status(
     telegram_id: int, session: AsyncSession
-) -> tuple[str | None, str, str | None, str | None, date | None]:
+) -> tuple[None, str, None, None, None] | tuple[str | None, str, Any, Any, Date]:
     """
     Retrieves the user's name, system status, and subscription details.
 
@@ -52,14 +55,12 @@ async def check_user_status(
 
     if telegram_id in admins:
         user_status = "admin"
-        print(user_name, user_status, sub_status, sub_type, sub_end_date)
         return user_name, user_status, sub_status, sub_type, sub_end_date
 
     user = await UserDAO.find_one_or_none_by_id(data_id=telegram_id, session=session)
 
     # new user
     if not user:
-        print(user_name, user_status, sub_status, sub_type, sub_end_date)
         return user_name, user_status, sub_status, sub_type, sub_end_date
 
     if not user.first_name:
@@ -72,7 +73,6 @@ async def check_user_status(
     sub_type = user.subscription.subscription_type.value
     sub_end_date = user.subscription.end_date
 
-    print(user_name, user_status, sub_status, sub_type, sub_end_date)
     return user_name, user_status, sub_status, sub_type, sub_end_date
 
 
@@ -119,13 +119,14 @@ async def cmd_start(message: Message):
             "3️⃣ Пройди регистрацию 📝\n"
             "4️⃣ Тренируйся с нами ️ 🏋️‍♀️\n\n"
             "👉 Начни свой <b>прогресс</b> по кнопке ниже!",
-            reply_markup=subscription_selection_btn(),
+            reply_markup=subscription_selection_btn,
         )
-    if user_status == "pending_registration":
+    if user_status == "not_registered":
         await message.answer(
             text="🏋️‍♂️ Почти готово!\n"
-            "Ты уже оплатил(а) подписку, но еще не завершил(а) регистрацию.\n"
-            "📝 Остался последний шаг – заполни данные, и мы начнем тренировки!"
+            "Подписка <b>оплачена</b>.\n"
+            "📝 Остался последний шаг – заполни данные, и начни тренировки!",
+            reply_markup=to_registration_btn,
         )
     if user_status == "registered":
         formated_subs_end_date = sub_end_date.strftime("%d.%m.%Y")
@@ -135,14 +136,14 @@ async def cmd_start(message: Message):
                 text=f"⚡️ <b>Внимание, {user_name}!</b>\n\n"
                 f"Твоя подписка заканчивается <b>сегодня</b>!\n"
                 f"🚀 <b>Не теряй темп!</b> Продли подписку, чтобы не прерывать тренировки.",
-                reply_markup=renew_or_change_subscription_kb(),
+                reply_markup=renew_or_change_subscription_kb,
             )
         elif sub_status == "Активна" and days_till_end in (1, 2):
             await message.answer(
                 text=f"⚡️ <b>Внимание, {user_name}!</b>\n\n"
                 f"Твоя подписка заканчивается <b>на днях</b>!\n"
                 f"🚀 <b>Не теряй темп!</b> Продли подписку, чтобы не прерывать тренировки.",
-                reply_markup=renew_or_change_subscription_kb(),
+                reply_markup=renew_or_change_subscription_kb,
             )
         elif sub_status == "Активна":
             await message.answer(
