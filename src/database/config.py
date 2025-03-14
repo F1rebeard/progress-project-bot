@@ -1,10 +1,16 @@
 from functools import wraps
 
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncAttrs, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncAttrs,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 from sqlalchemy.orm import DeclarativeBase
 
 from src.config import database_url, settings
+
 
 engine = create_async_engine(url=database_url, echo=settings.DEBUG)
 async_session_maker = async_sessionmaker(engine, class_=AsyncSession)

@@ -10,6 +10,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from src.logger import setup_logging
 
+
 setup_logging()
 logger = logging.getLogger(__name__)
 load_dotenv()
@@ -20,7 +21,6 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     ADMIN_IDS: list[int]
     BOT_TOKEN: str
-
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

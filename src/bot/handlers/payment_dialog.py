@@ -23,6 +23,7 @@ from src.schemas.payment import PaymentCreateSchema
 from src.schemas.subscription import SubscriptionCreateSchema
 from src.schemas.user import UserCreateSchema
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -54,7 +55,7 @@ full_start = SubscriptionPlan(
     id=3,
     name=SubscriptionType.START_PROGRAM.value,
     description='🚀 Полная программа тренировок "Cтарт" c персональным сопровождением куратора.\n\n'
-                ' Подготовь себя к "Прогрессу"!',
+    ' Подготовь себя к "Прогрессу"!',
     price=10000,
     days=90,
 )
@@ -64,7 +65,7 @@ month_start = SubscriptionPlan(
     name=SubscriptionType.ONE_MONTH_START.value,
     description='Один месяц по программе "Старт" c персональным сопровождением куратора.',
     price=10000,
-    days=30
+    days=30,
 )
 
 sub_plans = (
@@ -83,7 +84,10 @@ class ChoosePlanSG(StatesGroup):
 
 
 @payment_router.callback_query(F.data == "new_subscription")
-async def start_new_sub_dialog(callback: CallbackQuery, dialog_manager: DialogManager,):
+async def start_new_sub_dialog(
+    callback: CallbackQuery,
+    dialog_manager: DialogManager,
+):
     await dialog_manager.start(state=ChoosePlanSG.sub_plan_selection)
 
 
@@ -117,16 +121,12 @@ async def process_new_subscription(
     username = callback.from_user.username
     chosen_plan = manager.dialog_data["chosen_plan"]
 
-
-    logger.debug(f"Выбранный тип подписки: {chosen_plan}"
-                 f" для пользователя с 🆔 {callback.from_user.id}")
+    logger.debug(
+        f"Выбранный тип подписки: {chosen_plan} для пользователя с 🆔 {callback.from_user.id}"
+    )
 
     # Create new user
-    new_user_data = UserCreateSchema(
-        telegram_id=telegram_id,
-        username=username,
-        role=UserRole.USER
-    )
+    new_user_data = UserCreateSchema(telegram_id=telegram_id, username=username, role=UserRole.USER)
     new_user: User = await UserDAO.add(session=session, data=new_user_data)
 
     # Create new subscription
@@ -141,10 +141,10 @@ async def process_new_subscription(
 
     # Create new payment info
     payment_data = PaymentCreateSchema(
-        sub_id = new_sub.user_id,
-        sub_type = chosen_plan["name"],
-        amount = chosen_plan["price"],
-        status = PaymentStatus.COMPLETED,
+        sub_id=new_sub.user_id,
+        sub_type=chosen_plan["name"],
+        amount=chosen_plan["price"],
+        status=PaymentStatus.COMPLETED,
     )
     new_payment_data: Payment = await PaymentDAO.add(session=session, data=payment_data)
     logger.info(f"Новый платёж: {new_payment_data}")
@@ -154,7 +154,7 @@ async def process_new_subscription(
         f"Подписка <b>{chosen_plan['name']}</b> активирована.\n"
         f"📅 Действует до <b>{new_sub.end_date.strftime('%d %B %Y')}</b>.\n\n"
         f"⬇️ Осталось завершить регистрацию ",
-        reply_markup=to_registration_btn
+        reply_markup=to_registration_btn,
     )
     await manager.done()
 
@@ -182,11 +182,9 @@ subscription_selection_dialog = Dialog(
             "{dialog_data[chosen_plan][description]}"
         ),
         Button(
-            text=Const("Оплатить подписку"),
-            on_click=process_new_subscription,
-            id="process_payment"
+            text=Const("Оплатить подписку"), on_click=process_new_subscription, id="process_payment"
         ),
         Back(Const("Назад, к выбору подписки")),
         state=ChoosePlanSG.sub_plan_details,
-    )
+    ),
 )

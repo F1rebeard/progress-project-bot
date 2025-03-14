@@ -9,10 +9,10 @@ from src.database.config import async_session_maker
 
 class BaseDatabaseMiddleware(BaseMiddleware):
     async def __call__(
-            self,
-            handler: Callable[[Message | CallbackQuery, dict[str, Any]], Awaitable[Any]],
-            event: Message | CallbackQuery,
-            data: dict[str, Any]
+        self,
+        handler: Callable[[Message | CallbackQuery, dict[str, Any]], Awaitable[Any]],
+        event: Message | CallbackQuery,
+        data: dict[str, Any],
     ) -> Any:
         async with async_session_maker() as session:
             self.set_session(data, session)
@@ -37,12 +37,12 @@ class BaseDatabaseMiddleware(BaseMiddleware):
 
 class DatabaseMiddlewareWithoutCommit(BaseDatabaseMiddleware):
     def set_session(self, data: dict[str, Any], session) -> None:
-        data['session_without_commit'] = session
+        data["session_without_commit"] = session
 
 
 class DatabaseMiddlewareWithCommit(BaseDatabaseMiddleware):
     def set_session(self, data: dict[str, Any], session) -> None:
-        data['session_with_commit'] = session
+        data["session_with_commit"] = session
 
     async def after_handler(self, session) -> None:
         await session.commit()

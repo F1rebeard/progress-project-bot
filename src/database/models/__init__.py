@@ -6,6 +6,7 @@ from src.database.models.subscription import Subscription
 from src.database.models.user import User
 from src.database.models.workout import Workout, WorkoutResult
 
+
 __all__ = [
     "Base",
     "Biometric",

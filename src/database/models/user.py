@@ -6,8 +6,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database.models import Base
 
+
 if TYPE_CHECKING:
- from src.database.models import Biometric, CuratorUser, Subscription, WorkoutResult
+    from src.database.models import Biometric, CuratorUser, Subscription, WorkoutResult
 
 
 class UserLevel(str, enum.Enum):
@@ -30,13 +31,12 @@ class Gender(str, enum.Enum):
 
 
 class User(Base):
-
     telegram_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, unique=True)
     username: Mapped[str | None] = mapped_column(String(32), unique=True, nullable=True)
     first_name: Mapped[str | None] = mapped_column(String(64), nullable=True)
     last_name: Mapped[str | None] = mapped_column(String(64), nullable=True)
     e_mail: Mapped[str | None] = mapped_column(String(100), unique=True, nullable=True)
-    gender: Mapped[Gender| None] = mapped_column(Enum(Gender), nullable=True)
+    gender: Mapped[Gender | None] = mapped_column(Enum(Gender), nullable=True)
     level: Mapped[UserLevel | None] = mapped_column(Enum(UserLevel), nullable=True)
     role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.USER)
 

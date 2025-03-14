@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.database.models import Base
 from src.database.models.user import UserLevel
 
+
 if TYPE_CHECKING:
     from src.database.models import User
 
@@ -23,11 +24,13 @@ class Workout(Base):
         cascade="all, delete-orphan",
     )
 
+
 class WorkoutResult(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     result: Mapped[str] = mapped_column(Text, nullable=False)
-    workout_id: Mapped[int] = mapped_column(ForeignKey("workouts.id", ondelete="CASCADE"),
-                                            nullable=False)
+    workout_id: Mapped[int] = mapped_column(
+        ForeignKey("workouts.id", ondelete="CASCADE"), nullable=False
+    )
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.telegram_id", ondelete="CASCADE"), nullable=False
     )

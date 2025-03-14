@@ -16,6 +16,7 @@ from src.config import admins
 from src.dao import UserDAO
 from src.database.config import connection
 
+
 start_command_router = Router()
 
 
@@ -74,8 +75,6 @@ async def check_user_status(
     sub_end_date = user.subscription.end_date
 
     return user_name, user_status, sub_status, sub_type, sub_end_date
-
-
 
 
 @start_command_router.message(CommandStart())

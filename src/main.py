@@ -6,7 +6,10 @@ from aiogram.exceptions import TelegramBadRequest, TelegramNotFound
 from aiogram.types import BotCommand, BotCommandScopeDefault
 from aiogram_dialog import setup_dialogs
 
-from src.bot.handlers.payment_dialog import payment_router, subscription_selection_dialog
+from src.bot.handlers.payment_dialog import (
+    payment_router,
+    subscription_selection_dialog,
+)
 from src.bot.handlers.start_bot import start_command_router
 from src.config import admins, bot, dp
 from src.logger import setup_logging
@@ -14,6 +17,7 @@ from src.middleware.database_middleware import (
     DatabaseMiddlewareWithCommit,
     DatabaseMiddlewareWithoutCommit,
 )
+
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -53,8 +57,8 @@ async def stop_bot():
 async def main():
     try:
         locale.setlocale(locale.LC_TIME, "Russian_Russia.1251")
-        #-linux
-        #locale.setlocale(locale.LC_TIME, "ru_RU.UTF-8")
+        # -linux
+        # locale.setlocale(locale.LC_TIME, "ru_RU.UTF-8")
         logger.info("Locale установлен в русский режим.")
     except locale.Error:
         logger.warning("Не удалось установить Locale в русский режим")
@@ -79,6 +83,7 @@ async def main():
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     finally:
         await bot.session.close()
+
 
 if __name__ == "__main__":
     asyncio.run(main())
