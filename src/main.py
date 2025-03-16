@@ -10,13 +10,10 @@ from src.bot.handlers.payment_dialog import (
     payment_router,
     subscription_selection_dialog,
 )
-<<<<<<< Updated upstream
-=======
 from src.bot.handlers.registration_dialog import (
     registration_dialog,
     registration_router,
 )
->>>>>>> Stashed changes
 from src.bot.handlers.start_bot import start_command_router
 from src.config import admins, bot, dp
 from src.logger import setup_logging
@@ -24,7 +21,6 @@ from src.middleware.database_middleware import (
     DatabaseMiddlewareWithCommit,
     DatabaseMiddlewareWithoutCommit,
 )
-
 
 setup_logging()
 logger = logging.getLogger(__name__)
