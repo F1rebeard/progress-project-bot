@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from src.database.models.user import UserRole
+from src.database.models.user import Gender, UserLevel, UserRole
 
 
 class UserCreateSchema(BaseModel):
@@ -10,4 +10,8 @@ class UserCreateSchema(BaseModel):
 
 
 class UserUpdateSchema(BaseModel):
-    pass
+    first_name: str | None = None
+    last_name: str | None = None
+    e_mail: str | None = None
+    gender: Gender | None = None
+    level: UserLevel | None = None

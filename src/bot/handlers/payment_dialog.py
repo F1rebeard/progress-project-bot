@@ -74,7 +74,6 @@ sub_plans = (
     full_start.model_dump(exclude_unset=True),
     month_start.model_dump(exclude_unset=True),
 )
-month_start.model_dump()
 payment_router = Router()
 
 
@@ -97,9 +96,8 @@ async def on_plan_chosen(
     manager: DialogManager,
     item_id: str,
 ):
-    selected_plan = next(plan for plan in sub_plans if plan["id"] == int(item_id))
-    manager.dialog_data["chosen_plan"] = selected_plan
-    print(manager.dialog_data)
+    chosen_plan = next(plan for plan in sub_plans if plan["id"] == int(item_id))
+    manager.dialog_data["chosen_plan"] = chosen_plan
     await manager.next()
 
 

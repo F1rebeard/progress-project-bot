@@ -10,6 +10,13 @@ from src.bot.handlers.payment_dialog import (
     payment_router,
     subscription_selection_dialog,
 )
+<<<<<<< Updated upstream
+=======
+from src.bot.handlers.registration_dialog import (
+    registration_dialog,
+    registration_router,
+)
+>>>>>>> Stashed changes
 from src.bot.handlers.start_bot import start_command_router
 from src.config import admins, bot, dp
 from src.logger import setup_logging
@@ -72,11 +79,14 @@ async def main():
     dp.shutdown.register(stop_bot)
 
     # Routers  and dialogs register
+    setup_dialogs(dp)
+
     dp.include_router(start_command_router)
     dp.include_router(payment_router)
+    dp.include_router(registration_router)
 
-    setup_dialogs(dp)
     dp.include_router(subscription_selection_dialog)
+    dp.include_router(registration_dialog)
 
     try:
         await bot.delete_webhook(drop_pending_updates=True)

@@ -26,8 +26,8 @@ class UserRole(str, enum.Enum):
 
 
 class Gender(str, enum.Enum):
-    MALE = "Мужчина"
-    FEMALE = "Женщина"
+    MALE = "Парень ♂️"
+    FEMALE = "Девушка ♀️"
 
 
 class User(Base):
