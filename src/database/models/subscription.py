@@ -6,7 +6,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database.models import Base
 
-
 if TYPE_CHECKING:
     from src.database.models import Payment, User
 
@@ -22,6 +21,7 @@ class SubscriptionStatus(str, enum.Enum):
     ACTIVE = "Активна"
     FROZEN = "Заморожена"
     EXPIRED = "Истекла"
+    UNREGISTERED = "Оплата без регистрации"
 
 
 class Subscription(Base):

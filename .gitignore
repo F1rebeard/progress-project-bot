@@ -173,3 +173,5 @@ cython_debug/
 .pre-commit-config.yaml
 .idea/
 example_dao.py
+
+/logs

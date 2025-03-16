@@ -13,6 +13,12 @@ class SubscriptionCreateSchema(BaseModel):
     end_date: date
 
 
+class SubscriptionUpdateSchema(BaseModel):
+    subscription_type: SubscriptionType | None
+    status: SubscriptionStatus | None
+    end_date: date | None
+
+
 class SubscriptionReadSchema(BaseModel):
     subscription_type: SubscriptionType
     status: SubscriptionStatus

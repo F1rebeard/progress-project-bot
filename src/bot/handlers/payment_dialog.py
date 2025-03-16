@@ -23,7 +23,6 @@ from src.schemas.payment import PaymentCreateSchema
 from src.schemas.subscription import SubscriptionCreateSchema
 from src.schemas.user import UserCreateSchema
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -132,7 +131,7 @@ async def process_new_subscription(
     new_sub_data = SubscriptionCreateSchema(
         user_id=new_user.telegram_id,
         subscription_type=chosen_plan["name"],
-        status=SubscriptionStatus.ACTIVE,
+        status=SubscriptionStatus.UNREGISTERED,
         end_date=end_date,
     )
     new_sub: Subscription = await SubscriptionDAO.add(session=session, data=new_sub_data)
@@ -145,7 +144,7 @@ async def process_new_subscription(
         status=PaymentStatus.COMPLETED,
     )
     new_payment_data: Payment = await PaymentDAO.add(session=session, data=payment_data)
-    logger.info(f"Новый платёж: {new_payment_data}")
+    logger.info(f"New payment: {new_payment_data}")
 
     await callback.message.edit_text(
         f"✅ Оплата успешно проведена!\n\n"

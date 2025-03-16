@@ -1,7 +1,7 @@
-from datetime import datetime
-from enum import Enum
 import logging
 import re
+from datetime import datetime
+from enum import Enum
 from typing import Any
 
 from aiogram import F, Router
@@ -15,12 +15,12 @@ from aiogram_dialog.widgets.text import Const, Format, Multi
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from database.models.subscription import SubscriptionStatus
 from src.dao import BiometricDAO, SubscriptionDAO, UserDAO
 from src.database.config import connection
 from src.database.models import Subscription
 from src.database.models.user import Gender, UserLevel
 from src.schemas import BiometricCreateSchema, UserUpdateSchema
-
 
 logger = logging.getLogger(__name__)
 
@@ -286,6 +286,12 @@ async def save_user_data(
             data=user_update,
         )
         current_user = await UserDAO.find_one_or_none_by_id(data_id=telegram_id, session=session)
+        if current_user.subscription:
+            current_user.subscription.status = SubscriptionStatus.ACTIVE
+            logger.debug(
+                f"Updated subscription status {current_user.subscription.status}"
+                f" for user: {telegram_id}"
+            )
         if current_user.biometrics is not None:
             logger.debug(f"Updating existing biometrics for user {telegram_id}")
             current_user.biometrics.height = data.get("height")
@@ -303,6 +309,7 @@ async def save_user_data(
         await callback.message.answer(
             "✅ Регистрация успешно завершена!\n\nДобро пожаловать в <b>Прогресс</b>!"
         )
+        await manager.done()
     except Exception as e:
         logger.error(f"Error in saving user data: {e}")
         await callback.message.answer(
