@@ -16,6 +16,10 @@ from src.bot.handlers.registration_dialog import (
     registration_router,
 )
 from src.bot.handlers.start_bot import start_command_router
+from src.bot.handlers.workout_calendar import (
+    workout_calendar_dialog,
+    workout_calendar_router,
+)
 from src.config import admins, bot, dp
 from src.logger import setup_logging
 from src.middleware.database_middleware import (
@@ -82,9 +86,11 @@ async def main():
     dp.include_router(main_menu_router)
     dp.include_router(payment_router)
     dp.include_router(registration_router)
+    dp.include_router(workout_calendar_router)
 
     dp.include_router(subscription_selection_dialog)
     dp.include_router(registration_dialog)
+    dp.include_router(workout_calendar_dialog)
 
     try:
         await bot.delete_webhook(drop_pending_updates=True)
