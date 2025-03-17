@@ -1,4 +1,3 @@
-from datetime import date
 from typing import Any
 
 from aiogram import Router
@@ -7,15 +6,17 @@ from aiogram.types import Message
 from sqlalchemy import Date
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.bot.handlers.main_menu import show_main_menu
+from src.bot.keyboards.main_menu import get_main_menu_keyboard
 from src.bot.keyboards.subscription import (
     renew_or_change_subscription_kb,
     subscription_selection_btn,
     to_registration_btn,
+    unfreeze_subscription_kb,
 )
 from src.config import admins
 from src.dao import UserDAO
 from src.database.config import connection
-
 
 start_command_router = Router()
 
@@ -129,36 +130,23 @@ async def cmd_start(message: Message):
         )
     if user_status == "registered":
         formated_subs_end_date = sub_end_date.strftime("%d.%m.%Y")
-        days_till_end = (sub_end_date - date.today()).days
-        if sub_status == "Активна" and days_till_end == 0:
+        if sub_status == "Активна":
+            main_menu_text = await show_main_menu(telegram_id)
             await message.answer(
-                text=f"⚡️ <b>Внимание, {user_name}!</b>\n\n"
-                f"Твоя подписка заканчивается <b>сегодня</b>!\n"
-                f"🚀 <b>Не теряй темп!</b> Продли подписку, чтобы не прерывать тренировки.",
-                reply_markup=renew_or_change_subscription_kb,
-            )
-        elif sub_status == "Активна" and days_till_end in (1, 2):
-            await message.answer(
-                text=f"⚡️ <b>Внимание, {user_name}!</b>\n\n"
-                f"Твоя подписка заканчивается <b>на днях</b>!\n"
-                f"🚀 <b>Не теряй темп!</b> Продли подписку, чтобы не прерывать тренировки.",
-                reply_markup=renew_or_change_subscription_kb,
-            )
-        elif sub_status == "Активна":
-            await message.answer(
-                text=f"🏆 <b>Добро пожаловать обратно в Прогресс, {user_name}</b>!\n\n"
-                f"Твоя подписка активна! Осталось дней: <b>{days_till_end}</b>\n"
-                f"📅 <b>Дата окончания подписки: {formated_subs_end_date}</b>\n"
+                text=main_menu_text,
+                reply_markup=get_main_menu_keyboard(),
             )
         elif sub_status == "Заморожена":
             await message.answer(
                 text="❄️ <b>Ой-ой, твоя подписка заморожена!</b>\n"
                 "Мы скучаем по твоим рекордам, а штанга застоялась…\n"
-                "👉 <b>Разморозь подписку</b> и возвращайся в игру! 🏋️‍♀️"
+                "👉 <b>Разморозь подписку</b> и возвращайся в игру! 🏋️‍♀️",
+                reply_markup=unfreeze_subscription_kb,
             )
-        if sub_status == "Истекла":
+        elif sub_status == "Истекла":
             await message.answer(
                 text=f"Твоя подписка <b>закончилась {formated_subs_end_date} 😢</b>.\n"
                 f"🔥 Но ты можешь вернуться в Прогресс прямо сейчас!\n"
-                f"📌 Обнови подписку и продолжай тренироваться с нами!\n"
+                f"📌 Обнови подписку и продолжай тренироваться с нами!\n",
+                reply_markup=renew_or_change_subscription_kb,
             )

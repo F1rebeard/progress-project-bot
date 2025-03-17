@@ -6,6 +6,7 @@ from aiogram.exceptions import TelegramBadRequest, TelegramNotFound
 from aiogram.types import BotCommand, BotCommandScopeDefault
 from aiogram_dialog import setup_dialogs
 
+from src.bot.handlers.main_menu import main_menu_router
 from src.bot.handlers.payment_dialog import (
     payment_router,
     subscription_selection_dialog,
@@ -78,6 +79,7 @@ async def main():
     setup_dialogs(dp)
 
     dp.include_router(start_command_router)
+    dp.include_router(main_menu_router)
     dp.include_router(payment_router)
     dp.include_router(registration_router)
 

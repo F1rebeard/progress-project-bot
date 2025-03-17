@@ -11,7 +11,6 @@ from sqlalchemy.orm import DeclarativeBase
 
 from src.config import database_url, settings
 
-
 engine = create_async_engine(url=database_url, echo=settings.DEBUG)
 async_session_maker = async_sessionmaker(engine, class_=AsyncSession)
 

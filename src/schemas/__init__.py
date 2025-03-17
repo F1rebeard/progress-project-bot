@@ -3,7 +3,6 @@ from src.schemas.payment import PaymentCreateSchema
 from src.schemas.subscription import SubscriptionCreateSchema, SubscriptionReadSchema
 from src.schemas.user import UserCreateSchema, UserUpdateSchema
 
-
 __all__ = [
     "BiometricCreateSchema",
     "BiometricUpdateSchema",

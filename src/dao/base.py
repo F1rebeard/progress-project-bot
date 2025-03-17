@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.config import Base
 
-
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=Base)

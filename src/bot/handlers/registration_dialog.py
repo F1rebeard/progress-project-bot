@@ -15,10 +15,11 @@ from aiogram_dialog.widgets.text import Const, Format, Multi
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models.subscription import SubscriptionStatus
+from src.bot.keyboards.main_menu import get_main_menu_button
 from src.dao import BiometricDAO, SubscriptionDAO, UserDAO
 from src.database.config import connection
 from src.database.models import Subscription
+from src.database.models.subscription import SubscriptionStatus
 from src.database.models.user import Gender, UserLevel
 from src.schemas import BiometricCreateSchema, UserUpdateSchema
 
@@ -286,12 +287,17 @@ async def save_user_data(
             data=user_update,
         )
         current_user = await UserDAO.find_one_or_none_by_id(data_id=telegram_id, session=session)
+
+        # Changing subscription status
         if current_user.subscription:
             current_user.subscription.status = SubscriptionStatus.ACTIVE
             logger.debug(
                 f"Updated subscription status {current_user.subscription.status}"
                 f" for user: {telegram_id}"
             )
+            await session.flush()
+
+        # Adding biometrics status
         if current_user.biometrics is not None:
             logger.debug(f"Updating existing biometrics for user {telegram_id}")
             current_user.biometrics.height = data.get("height")
@@ -308,6 +314,9 @@ async def save_user_data(
             await BiometricDAO.add(session, data=biometric_create)
         await callback.message.answer(
             "✅ Регистрация успешно завершена!\n\nДобро пожаловать в <b>Прогресс</b>!"
+        )
+        await callback.message.answer(
+            "📱 Переходи в главное меню:", reply_markup=get_main_menu_button()
         )
         await manager.done()
     except Exception as e:

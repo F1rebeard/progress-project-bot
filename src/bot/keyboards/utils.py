@@ -19,3 +19,6 @@ def create_inline_keyboard(buttons: list[tuple[str, str]]):
             for text, callback_data in buttons
         ]
     )
+
+
+# Add to src/bot/keyboards/utils.py

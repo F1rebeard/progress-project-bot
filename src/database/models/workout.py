@@ -6,7 +6,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.database.models import Base
 from src.database.models.user import UserLevel
 
-
 if TYPE_CHECKING:
     from src.database.models import User
 
