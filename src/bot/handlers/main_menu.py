@@ -1,6 +1,6 @@
 import logging
 from datetime import date
-from pprint import pprint
+from typing import Any
 
 from aiogram import F, Router
 from aiogram.types import CallbackQuery
@@ -13,6 +13,7 @@ from src.bot.keyboards.subscription import (
 )
 from src.dao import UserDAO
 from src.database.config import connection
+from src.database.models import User
 
 logger = logging.getLogger(__name__)
 
@@ -22,14 +23,11 @@ START_NOTIFICATION_DAYS: int = 5
 
 
 @connection(commit=False)
-async def get_user_profile_info(telegram_id: int, session: AsyncSession):
+async def get_user_profile_info(telegram_id: int, session: AsyncSession) -> dict[str, Any] | None:
     """
-
-    :param telegram_id:
-    :param session:
-    :return:
+    Prepares user profile info as dictionary to show in main menu.
     """
-    user = await UserDAO.find_one_or_none_by_id(data_id=telegram_id, session=session)
+    user: User | None = await UserDAO.find_one_or_none_by_id(data_id=telegram_id, session=session)
     if not user:
         return None
 
@@ -43,14 +41,6 @@ async def get_user_profile_info(telegram_id: int, session: AsyncSession):
     sub_end_date = user.subscription.end_date
     days_left = (sub_end_date - date.today()).days
     formatted_end_date = sub_end_date.strftime("%d.%m.%Y")
-    result = {
-        "level": user_level,
-        "sub_end_date": formatted_end_date,
-        "days_left": days_left,
-        "sub_status": user.subscription.status.value,
-        "has_subscription": True,
-    }
-    pprint(result)
     return {
         "level": user_level,
         "sub_end_date": formatted_end_date,
@@ -60,7 +50,7 @@ async def get_user_profile_info(telegram_id: int, session: AsyncSession):
     }
 
 
-async def show_main_menu(telegram_id: int):
+async def show_main_menu(telegram_id: int) -> str:
     """
     Get the formatted main menu text with user info.
     :param telegram_id:
