@@ -37,6 +37,7 @@ class Subscription(Base):
     status: Mapped[SubscriptionStatus] = mapped_column(Enum(SubscriptionStatus), nullable=False)
     registered_date: Mapped[Date] = mapped_column(Date, server_default=func.now(), nullable=False)
     end_date: Mapped[Date] = mapped_column(Date, nullable=False)
+    start_program_begin_date: Mapped[Date | None] = mapped_column(Date, nullable=True)
 
     # Relationships
     user: Mapped["User"] = relationship(

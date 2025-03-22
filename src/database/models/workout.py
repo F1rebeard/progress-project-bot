@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Date, Enum, ForeignKey, Text
+from sqlalchemy import BigInteger, Date, Enum, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database.models import Base
@@ -15,6 +15,7 @@ class Workout(Base):
     description: Mapped[str] = mapped_column(Text, nullable=True)
     date: Mapped[Date] = mapped_column(Date, nullable=False)
     level: Mapped[UserLevel] = mapped_column(Enum(UserLevel), nullable=False)
+    hashtag: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     # Relationships
     workout_results: Mapped[list["WorkoutResult"]] = relationship(

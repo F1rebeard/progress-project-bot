@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.dao import BaseDAO
 from src.database.models import Workout
 from src.database.models.user import UserLevel
+from src.utils.workout_hashtags import create_hashtag
 
 
 class WorkoutDAO(BaseDAO[Workout]):
@@ -56,3 +57,29 @@ class WorkoutDAO(BaseDAO[Workout]):
         )
         result = await session.execute(query)
         return result.scalar_one_or_none()
+
+    @classmethod
+    async def generate_hashtag(
+        cls, wokrout_date: date, level: UserLevel, start_program_day: int | None = None
+    ) -> str:
+        """
+        Generate hashtag for a workout based on date and level.
+        For START programs also need the day number in program.
+        """
+        return create_hashtag(wokrout_date, level, start_program_day)
+
+    @classmethod
+    async def add_with_hashtag(
+        cls, session: AsyncSession, data: dict, start_day: int | None = None
+    ) -> Workout:
+        """
+        Add a new workout with automatically generated hashtag.
+        """
+        new_workout = cls.model(**data)
+        if not new_workout.hashtag:
+            new_workout.hashtag = await cls.generate_hashtag(
+                new_workout.date, new_workout.level, start_day
+            )
+        session.add(new_workout)
+        await session.flush()
+        return new_workout
