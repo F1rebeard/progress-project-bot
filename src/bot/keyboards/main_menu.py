@@ -7,7 +7,7 @@ def get_main_menu_keyboard():
     """Creates the main menu inline keyboard."""
     keyboard = [
         [
-            InlineKeyboardButton(text="🏋️‍♂️ Тренировка дня", callback_data="workout_of_day"),
+            InlineKeyboardButton(text="🏋️‍♂️ Тренировка дня", callback_data="workout_of_the_day"),
             InlineKeyboardButton(text="📋 Тренировки", callback_data="workouts"),
         ],
         [

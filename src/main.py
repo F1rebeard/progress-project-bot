@@ -20,6 +20,7 @@ from src.bot.handlers.workout_calendar import (
     workout_calendar_dialog,
     workout_calendar_router,
 )
+from src.bot.handlers.workout_of_the_day import workout_of_the_day_router
 from src.config import admins, bot, dp
 from src.logger import setup_logging
 from src.middleware.database_middleware import (
@@ -87,6 +88,7 @@ async def main():
     dp.include_router(payment_router)
     dp.include_router(registration_router)
     dp.include_router(workout_calendar_router)
+    dp.include_router(workout_of_the_day_router)
 
     dp.include_router(subscription_selection_dialog)
     dp.include_router(registration_dialog)
