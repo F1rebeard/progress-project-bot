@@ -116,7 +116,9 @@ async def show_workout_of_the_day(callback: CallbackQuery, session: AsyncSession
             InlineKeyboardButton(text="📱 В главное меню", callback_data="main_menu"),
         ],
     ]
-    message_text = f"🏋️‍♂️ <b>{date_text}</b>\n\n{workout.description}"
+    # Inside the show_workout_of_the_day function:
+    hashtag_text = f"\n{workout.hashtag}" if workout.hashtag else ""
+    message_text = f"🏋️‍♂️ <b>{date_text}</b>\n\n{hashtag_text}\n\n{workout.description}"
 
     await callback.message.edit_text(
         message_text, reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons)

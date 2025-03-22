@@ -83,3 +83,25 @@ class WorkoutDAO(BaseDAO[Workout]):
         session.add(new_workout)
         await session.flush()
         return new_workout
+
+    @classmethod
+    async def update_all_hashtags(cls, session: AsyncSession) -> int:
+        """
+        Update hashtags for all workouts that don't have one.
+
+        Returns:
+            int: Number of workouts updated
+        """
+        # Get all workouts without hashtags
+        query = select(cls.model).where(cls.model.hashtag.is_(None))
+        result = await session.execute(query)
+        workouts = result.scalars().all()
+
+        # Update each workout
+        count = 0
+        for workout in workouts:
+            workout.hashtag = await cls.generate_hashtag(workout.date, workout.level)
+            count += 1
+
+        await session.flush()
+        return count

@@ -13,11 +13,11 @@ WEEKDAYS = {
 }
 
 PROGRESS_LEVELS = {
-    "Первый": "1",
-    "Второй": "2",
-    "Минкайфа": "МКФ",
-    "Соревнования": "СРВ",
-    "Старт": "старт",
+    UserLevel.FIRST.value: "1",  # "Первый"
+    UserLevel.SECOND.value: "2",  # "Второй"
+    UserLevel.MINKAIFA.value: "МКФ",  # "Минкайфа"
+    UserLevel.COMPETITION.value: "СРВ",  # "Соревнования"
+    UserLevel.START.value: "старт",  # "Старт"
 }
 
 

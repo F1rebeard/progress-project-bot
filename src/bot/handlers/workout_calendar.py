@@ -275,9 +275,9 @@ workout_calendar_dialog = Dialog(
     ),
     Window(
         Const("🏋️ Детали тренировки\n\n"),
-        # TODO add WORKOUT HASHTAG!
         Format("Дата: {date}"),
-        Format("Тренировка:\n\n{workout.description}"),
+        Format("{workout.hashtag}\n"),
+        Format("{workout.description}"),
         Button(Const("🔥 Подсказать с разминкой"), id="show_warmup", on_click=show_warmup),
         Back(Const("Назад к календарю")),
         Button(Const("В главное меню"), id="to_main_menu", on_click=go_to_main_menu),
