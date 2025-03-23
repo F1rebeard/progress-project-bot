@@ -12,6 +12,7 @@ class UserCreateSchema(BaseModel):
 class UserUpdateSchema(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
+    username: str | None = None
     e_mail: str | None = None
     gender: Gender | None = None
     level: UserLevel | None = None

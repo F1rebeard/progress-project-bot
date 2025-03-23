@@ -21,6 +21,7 @@ from src.bot.handlers.workout_calendar import (
     workout_calendar_router,
 )
 from src.bot.handlers.workout_of_the_day import workout_of_the_day_router
+from src.bot.handlers.workouts_for_start_program import start_program_router
 from src.config import admins, bot, dp
 from src.logger import setup_logging
 from src.middleware.database_middleware import (
@@ -33,13 +34,11 @@ logger = logging.getLogger(__name__)
 
 
 async def set_commands():
-    """Set's the command menu for all users."""
     commands = [BotCommand(command="start", description="Запуск или перезапуска бота")]
     await bot.set_my_commands(commands, BotCommandScopeDefault())
 
 
 async def start_bot():
-    """Methods with bot starting."""
     await set_commands()
     for admin_id in admins:
         try:
@@ -52,7 +51,6 @@ async def start_bot():
 
 
 async def stop_bot():
-    """Methods with bot stopping."""
     for admin_id in admins:
         try:
             await bot.send_message(admin_id, "Я остановлен!")
@@ -80,16 +78,17 @@ async def main():
     dp.startup.register(start_bot)
     dp.shutdown.register(stop_bot)
 
-    # Routers  and dialogs register
+    # Routers register
     setup_dialogs(dp)
-
     dp.include_router(start_command_router)
     dp.include_router(main_menu_router)
     dp.include_router(payment_router)
     dp.include_router(registration_router)
     dp.include_router(workout_calendar_router)
     dp.include_router(workout_of_the_day_router)
+    dp.include_router(start_program_router)
 
+    # Dialogs register
     dp.include_router(subscription_selection_dialog)
     dp.include_router(registration_dialog)
     dp.include_router(workout_calendar_dialog)

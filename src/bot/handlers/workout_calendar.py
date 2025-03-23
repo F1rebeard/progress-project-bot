@@ -1,5 +1,5 @@
 import re
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any
 
 from aiogram import F, Router
@@ -20,8 +20,9 @@ from aiogram_dialog.widgets.text import Const, Format, Text
 
 from src.bot.handlers.main_menu import show_main_menu
 from src.constants.warm_ups import DEFAULT_WARMUP, WARMUPS
-from src.dao import UserDAO, WorkoutDAO
+from src.dao import StartWorkoutDAO, UserDAO, WorkoutDAO
 from src.database.models import User, Workout
+from src.database.models.subscription import SubscriptionType
 
 workout_calendar_router = Router()
 
@@ -127,6 +128,23 @@ async def on_date_selected(
         await callback.answer("Ошибка получения данных пользователя")
         return
 
+    is_start_program = user.subscription and user.subscription.subscription_type in [
+        SubscriptionType.START_PROGRAM,
+        SubscriptionType.ONE_MONTH_START,
+    ]
+    if is_start_program and user.subscription.start_program_begin_date:
+        start_date = user.subscription.start_program_begin_date
+        day_number = (selected_date - start_date).days + 1
+        if day_number > 0:
+            start_workout = await StartWorkoutDAO.get_workout_by_day(session, day_number)
+            if start_workout:
+                dialog_manager.dialog_data["start_workout"] = start_workout
+                dialog_manager.dialog_data["selected_date"] = selected_date
+                dialog_manager.dialog_data["start_program_day"] = day_number
+                dialog_manager.dialog_data["is_start_program"] = True
+                await dialog_manager.switch_to(WorkoutCalendarSG.workout_details)
+                return
+
     # Get workout for this date and user's level
     workout: Workout | None = await WorkoutDAO.get_workout_for_date(
         session=session, workout_date=selected_date, level=user.level
@@ -154,6 +172,8 @@ async def get_calendar_data(dialog_manager: DialogManager, **kwargs) -> dict:
     """
     Getting data for current user available workouts according to his subscription date range.
     The date range is 2 weeks before today and till the subscription last day.
+
+    Also getting the data for START workouts with the same date range.
     """
     user_id = dialog_manager.event.from_user.id
     session = dialog_manager.middleware_data.get("session_without_commit")
@@ -173,6 +193,19 @@ async def get_calendar_data(dialog_manager: DialogManager, **kwargs) -> dict:
     # Create the list of dates with workouts
     workout_dates = [w.date for w in workouts]
 
+    # Workout for START program
+    is_start_program = user.subscription.subscription_type in [
+        SubscriptionType.START_PROGRAM,
+        SubscriptionType.ONE_MONTH_START,
+    ]
+    if is_start_program and user.subscription.start_program_begin_date:
+        start_date: date = user.subscription.start_program_begin_date
+        start_program_workout_days = await StartWorkoutDAO.get_workout_days(session)
+        for day_number in start_program_workout_days:
+            workout_date: date = start_date + timedelta(days=day_number - 1)
+            if two_weeks_ago <= workout_date <= subscription_end:
+                workout_dates.append(workout_date)
+
     return {
         "today": today,
         "workout_dates": workout_dates,
@@ -189,10 +222,25 @@ async def get_workout_details(dialog_manager: DialogManager, **kwargs) -> dict[s
     user_id = dialog_manager.event.from_user.id
     if not selected_date:
         return {"workout": None}
+
     session = dialog_manager.middleware_data.get("session_without_commit")
+
+    is_start_program = dialog_manager.dialog_data.get("is_start_program", False)
+    if is_start_program:
+        start_program_day = dialog_manager.dialog_data.get("start_program_day")
+        start_workout = dialog_manager.dialog_data.get("start_workout")
+        if start_workout:
+            return {
+                "workout": start_workout,
+                "is_start_program": True,
+                "day_number": start_program_day,
+                "date": selected_date.strftime("%d.%m.%Y"),
+            }
+
     user: User | None = await UserDAO.find_one_or_none_by_id(data_id=user_id, session=session)
     if not user:
-        return {"workout": None}
+        return {"workout": None, "is_start_program": False}
+
     # Get workout for this date and user's level
     workout: Workout | None = await WorkoutDAO.get_workout_for_date(
         session=session, workout_date=selected_date, level=user.level
@@ -201,6 +249,7 @@ async def get_workout_details(dialog_manager: DialogManager, **kwargs) -> dict[s
         dialog_manager.dialog_data["workout"] = workout
     return {
         "workout": workout,
+        "is_start_program": False,
         "date": selected_date.strftime("%d.%m.%Y"),
     }
 
@@ -234,24 +283,27 @@ async def show_warmup(
     dialog_manager: DialogManager,
 ):
     """
-    Warm-up button click handler.
+    Warm-up button click handler for both regular and START program workouts.
     """
-    workout = dialog_manager.dialog_data.get("workout")
-    workout_description = None
-    if workout:
-        if hasattr(workout, "description"):
-            workout_description = workout.description
-        elif isinstance(workout, dict) and "description" in workout:
-            workout_description = workout["description"]
-    if not workout_description:
+    is_start_program = dialog_manager.dialog_data.get("is_start_program", False)
+    if is_start_program:
+        workout = dialog_manager.dialog_data.get("start_workout")
+    else:
+        workout = dialog_manager.dialog_data.get("workout")
+
+    # Safety check to prevent the NoneType error
+    if not workout or not hasattr(workout, "description"):
         await callback.answer("Не удалось найти информацию о разминке", show_alert=True)
         return
-    protocol_number = extract_protocol_number(workout.description)
+
+    workout_description = workout.description
+    protocol_number = extract_protocol_number(workout_description)
     if not protocol_number:
         await callback.answer("В тренировке не указан протокол разминки", show_alert=True)
         warmup_text = DEFAULT_WARMUP
     else:
         warmup_text = WARMUPS.get(protocol_number, DEFAULT_WARMUP)
+
     dialog_manager.dialog_data["warmup_text"] = warmup_text
     dialog_manager.dialog_data["protocol_number"] = protocol_number or "Не указан"
     await dialog_manager.switch_to(WorkoutCalendarSG.warmup_details)
@@ -275,9 +327,21 @@ workout_calendar_dialog = Dialog(
     ),
     Window(
         Const("🏋️ Детали тренировки\n\n"),
-        Format("Дата: {date}"),
-        Format("{workout.hashtag}\n"),
-        Format("{workout.description}"),
+        Format("Дата: {date}\n"),
+        Format("<b>День {day_number} программы СТАРТ</b>\n", when="is_start_program"),
+        Format(
+            "{workout.hashtag}\n",
+            when=lambda data, *args: (
+                not data.get("is_start_program", False)
+                and data.get("workout") is not None
+                and getattr(data.get("workout"), "hashtag", None) is not None
+            ),
+        ),
+        Format(
+            "{workout.description}",
+            when=lambda data, *args: data.get("workout") is not None
+            and hasattr(data.get("workout"), "description"),
+        ),
         Button(Const("🔥 Подсказать с разминкой"), id="show_warmup", on_click=show_warmup),
         Back(Const("Назад к календарю")),
         Button(Const("В главное меню"), id="to_main_menu", on_click=go_to_main_menu),

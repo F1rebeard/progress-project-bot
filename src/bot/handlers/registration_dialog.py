@@ -65,7 +65,7 @@ def generate_options(enum_class: Enum, exclude_values: list | None = None) -> tu
 
 
 # Generate options excluding "Старт" from levels
-levels_to_choose = generate_options(UserLevel, exclude_values=["Старт"])
+levels_to_choose = generate_options(UserLevel)
 genders_to_choose = generate_options(Gender)
 
 
@@ -277,6 +277,7 @@ async def save_user_data(
         user_update = UserUpdateSchema(
             first_name=data.get("first_name"),
             last_name=data.get("last_name"),
+            username=callback.from_user.username,
             e_mail=data.get("email"),
             gender=chosen_gender,
             level=chosen_level,
@@ -312,12 +313,16 @@ async def save_user_data(
                 birthday=data.get("birthday"),
             )
             await BiometricDAO.add(session, data=biometric_create)
-        await callback.message.answer(
-            "✅ Регистрация успешно завершена!\n\nДобро пожаловать в <b>Прогресс</b>!"
-        )
-        await callback.message.answer(
-            "📱 Переходи в главное меню:", reply_markup=get_main_menu_button()
-        )
+        if chosen_level == UserLevel.START.value:
+            await callback.message.answer(
+                "✅ Регистрация успешно завершена!\nДобро пожаловать в программу <b>СТАРТ</b>",
+                reply_markup=get_main_menu_button(),
+            )
+        else:
+            await callback.message.answer(
+                "✅ Регистрация успешно завершена!\nДобро пожаловать в <b>Прогресс</b>!",
+                reply_markup=get_main_menu_button(),
+            )
         await manager.done()
     except Exception as e:
         logger.error(f"Error in saving user data: {e}")
@@ -430,7 +435,7 @@ registration_dialog = Dialog(
         state=RegistrationSG.weight,
     ),
     Window(
-        Const("✅ Проверь введенные данные:\n\n"),
+        Const("✅ Проверь введенные данные:\n"),
         Format(
             "👤 <b>Имя:</b> {dialog_data[first_name]}\n"
             "👤 <b>Фамилия:</b> {dialog_data[last_name]}\n"

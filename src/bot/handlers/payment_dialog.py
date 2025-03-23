@@ -12,16 +12,17 @@ from aiogram_dialog.widgets.text import Const, Format
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.bot.handlers.workouts_for_start_program import set_start_program_date_for_new_subscription
 from src.bot.keyboards.subscription import to_registration_btn
 from src.dao import PaymentDAO, SubscriptionDAO, UserDAO
 from src.database.config import connection
 from src.database.models import Payment, Subscription, User
 from src.database.models.payment import PaymentStatus
 from src.database.models.subscription import SubscriptionStatus, SubscriptionType
-from src.database.models.user import UserRole
+from src.database.models.user import UserLevel, UserRole
 from src.schemas.payment import PaymentCreateSchema
 from src.schemas.subscription import SubscriptionCreateSchema
-from src.schemas.user import UserCreateSchema
+from src.schemas.user import UserCreateSchema, UserUpdateSchema
 
 logger = logging.getLogger(__name__)
 
@@ -117,14 +118,21 @@ async def process_new_subscription(
     telegram_id = callback.from_user.id
     username = callback.from_user.username
     chosen_plan = manager.dialog_data["chosen_plan"]
-
-    logger.debug(
+    logger.info(
         f"Выбранный тип подписки: {chosen_plan} для пользователя с 🆔 {callback.from_user.id}"
     )
 
     # Create new user
     new_user_data = UserCreateSchema(telegram_id=telegram_id, username=username, role=UserRole.USER)
     new_user: User = await UserDAO.add(session=session, data=new_user_data)
+
+    is_start_program: bool = chosen_plan["name"] in (
+        SubscriptionType.START_PROGRAM.value,
+        SubscriptionType.ONE_MONTH_START.ONE_MONTH_START.value,
+    )
+    if is_start_program:
+        user_update_data = UserUpdateSchema(level=UserLevel.START)
+        await UserDAO.update_one_by_id(session=session, data=user_update_data, data_id=telegram_id)
 
     # Create new subscription
     end_date = (datetime.datetime.today() + datetime.timedelta(days=chosen_plan["days"])).date()
@@ -135,6 +143,14 @@ async def process_new_subscription(
         end_date=end_date,
     )
     new_sub: Subscription = await SubscriptionDAO.add(session=session, data=new_sub_data)
+    if is_start_program:
+        start_date = await set_start_program_date_for_new_subscription(
+            telegram_id=telegram_id, subscription_type=chosen_plan["name"], session=session
+        )
+        if start_date:
+            start_date_message = (
+                f"\n\n📆 Программа СТАРТ начнется в понедельник ({start_date.strftime('%d.%m.%Y')})"
+            )
 
     # Create new payment info
     payment_data = PaymentCreateSchema(
@@ -146,14 +162,15 @@ async def process_new_subscription(
     new_payment_data: Payment = await PaymentDAO.add(session=session, data=payment_data)
     logger.info(f"New payment: {new_payment_data}")
 
+    await manager.done()
     await callback.message.edit_text(
         f"✅ Оплата успешно проведена!\n\n"
         f"Подписка <b>{chosen_plan['name']}</b> активирована.\n"
-        f"📅 Действует до <b>{new_sub.end_date.strftime('%d %B %Y')}</b>.\n\n"
+        f"📅 Действует до <b>{new_sub.end_date.strftime('%d %B %Y')}</b>."
+        f"{start_date_message if start_date else ''}\n\n"
         f"⬇️ Осталось завершить регистрацию ",
         reply_markup=to_registration_btn,
     )
-    await manager.done()
 
 
 subscription_selection_dialog = Dialog(
