@@ -7,7 +7,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.database.models import Base
 
 if TYPE_CHECKING:
-    from src.database.models import Biometric, CuratorUser, Subscription, WorkoutResult
+    from src.database.models import (
+        Biometric,
+        CuratorUser,
+        Subscription,
+        UserProfileResult,
+        WorkoutResult,
+    )
 
 
 class UserLevel(str, enum.Enum):
@@ -66,4 +72,7 @@ class User(Base):
         back_populates="user",
         foreign_keys="[CuratorUser.user_id]",
         uselist=False,
+    )
+    profile_results: Mapped[list["UserProfileResult"]] = relationship(
+        "UserProfileResult", back_populates="user", cascade="all, delete-orphan"
     )
