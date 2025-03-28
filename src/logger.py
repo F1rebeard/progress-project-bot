@@ -32,6 +32,7 @@ def setup_logging(logs_dir: str = "logs"):
 
         # Console handler - logs to the terminal
         console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.DEBUG)
         console_handler.setFormatter(logging.Formatter("%(message)s"))
         logger.addHandler(console_handler)
 

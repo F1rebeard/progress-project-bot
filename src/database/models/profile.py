@@ -28,7 +28,8 @@ class ResultType(str, enum.Enum):
     Result types for exercises.
     """
 
-    TIME = "время"
+    STM_TIME = "время удержание"
+    ASAP_TIME = "время скорость"
     WEIGHT = "вес"
     REPS = "пвт"
     DISTANCE = "дистанция"
