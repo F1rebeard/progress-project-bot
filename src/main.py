@@ -11,6 +11,7 @@ from src.bot.handlers.payment_dialog import (
     payment_router,
     subscription_selection_dialog,
 )
+from src.bot.handlers.profile_dialog import profile_dialog, profile_router
 from src.bot.handlers.registration_dialog import (
     registration_dialog,
     registration_router,
@@ -87,11 +88,13 @@ async def main():
     dp.include_router(workout_calendar_router)
     dp.include_router(workout_of_the_day_router)
     dp.include_router(start_program_router)
+    dp.include_router(profile_router)
 
     # Dialogs register
     dp.include_router(subscription_selection_dialog)
     dp.include_router(registration_dialog)
     dp.include_router(workout_calendar_dialog)
+    dp.include_router(profile_dialog)
 
     try:
         await bot.delete_webhook(drop_pending_updates=True)

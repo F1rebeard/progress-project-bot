@@ -5,8 +5,7 @@ from sqlalchemy import CheckConstraint, DateTime, Enum, Float, ForeignKey, Integ
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database.config import Base
-from src.database.models import User
-from src.database.models.user import Gender, UserLevel
+from src.database.models.user import Gender, User, UserLevel
 
 
 class MeasurementUnit(str, enum.Enum):
