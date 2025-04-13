@@ -34,7 +34,7 @@ class Settings(BaseSettings):
 settings = Settings()
 bot = Bot(
     token=settings.BOT_TOKEN,
-    default=DefaultBotProperties(parse_mode=ParseMode.HTML, protect_content=True),
+    default=DefaultBotProperties(parse_mode=ParseMode.HTML, protect_content=False),
 )
 dp = Dispatcher(storage=MemoryStorage())
 admins = settings.ADMIN_IDS

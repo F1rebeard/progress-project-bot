@@ -35,7 +35,7 @@ class BaseDAO(Generic[T]):
             raise
 
     @classmethod
-    async def find_one_or_none(cls, session: AsyncSession, filters: BaseModel) -> Sequence[T]:
+    async def find_one_or_none(cls, session: AsyncSession, filters: BaseModel) -> T | None:
         """
         Searching only one database_url model by pydantic base model.
         Args:

@@ -1,11 +1,11 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, Enum, Float, ForeignKey, Integer, String
+from sqlalchemy import Boolean, CheckConstraint, DateTime, Enum, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database.config import Base
-from src.database.models.user import Gender, User, UserLevel
+from src.database.models.user import User, UserLevel
 
 
 class MeasurementUnit(str, enum.Enum):
@@ -75,8 +75,8 @@ class ProfileExercise(Base):
     description: Mapped[str | None] = mapped_column(String(300), nullable=True)
     unit: Mapped[MeasurementUnit] = mapped_column(Enum(MeasurementUnit), nullable=False)
     result_type: Mapped[ResultType] = mapped_column(Enum(ResultType), nullable=False)
-    is_time_based: Mapped[bool] = mapped_column(Integer, nullable=False)
-    is_basic: Mapped[bool] = mapped_column(Integer, nullable=False)
+    is_time_based: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    is_basic: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
     # Relations
     category: Mapped["ProfileCategory"] = relationship(
@@ -108,12 +108,17 @@ class ExerciseStandard(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     exercise_id: Mapped[int] = mapped_column(ForeignKey("profile_exercises.id"), nullable=False)
     user_level: Mapped["UserLevel"] = mapped_column(Enum(UserLevel), nullable=False)
-    gender: Mapped[Gender] = mapped_column(Enum(Gender), nullable=False)
-    min_value: Mapped[float] = mapped_column(
-        Float, CheckConstraint("min_value > 0"), nullable=False
+    male_min_value: Mapped[float] = mapped_column(
+        Float, CheckConstraint("min_value >= 0"), nullable=False
     )
-    max_value: Mapped[float] = mapped_column(
-        Float, CheckConstraint("max_value > 0"), nullable=False
+    male_max_value: Mapped[float] = mapped_column(
+        Float, CheckConstraint("max_value >= 0"), nullable=False
+    )
+    female_min_value: Mapped[float] = mapped_column(
+        Float, CheckConstraint("min_value >= 0"), nullable=False
+    )
+    female_max_value: Mapped[float] = mapped_column(
+        Float, CheckConstraint("max_value >= 0"), nullable=False
     )
 
     # Relations
@@ -123,12 +128,7 @@ class ExerciseStandard(Base):
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<ExerciseStandard("
-            f"exercise='{self.exercise.name}',"
-            f" level='{self.user_level}',"
-            f" gender='{self.gender}')>"
-        )
+        return f"<ExerciseStandard(exercise='{self.exercise.name}', level='{self.user_level}'>"
 
 
 class UserProfileResult(Base):

@@ -2,15 +2,18 @@ import logging
 from typing import Any
 
 from aiogram import F, Router
+from aiogram.enums import ContentType
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import Dialog, DialogManager, Window
-from aiogram_dialog.widgets.kbd import Button, Column, NextPage, PrevPage, Row, Select
+from aiogram_dialog.widgets.input import MessageInput
+from aiogram_dialog.widgets.kbd import Back, Button, Column, NextPage, PrevPage, Row, Select
 from aiogram_dialog.widgets.text import Const, Format, List
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.bot.handlers.workout_calendar import go_to_main_menu
 from src.dao import (
+    ExerciseStandardDAO,
     LeaderboardDAO,
     ProfileCategoryDAO,
     ProfileExerciseDAO,
@@ -19,6 +22,7 @@ from src.dao import (
 )
 from src.database.config import connection
 from src.database.models import ProfileCategory, ProfileExercise, User, UserProfileResult
+from src.schemas.profile import ProfileResultSubmitSchema
 from src.utils.profile import (
     calculate_total_completion,
     format_result_value,
@@ -217,6 +221,101 @@ async def get_exercises_for_category(
     return category_data
 
 
+@connection(commit=True)
+async def result_input_handler(
+    message: Message,
+    message_input: MessageInput,
+    manager: DialogManager,
+    session: AsyncSession,
+):
+    """
+    Handle user input for result submit.
+
+    If the exercise is time-based, parse MM:SS or seconds format.
+    Otherwise, parse a float value.
+    Add a new result with validation against exercise standards.
+    If the result is valid, switch back to exercise selection.
+    Otherwise, show an error message.
+    """
+    user_id = message.from_user.id
+    exercise_id = manager.dialog_data.get("selected_exercise_id")
+    try:
+        exercise: ProfileExercise = await ProfileExerciseDAO.find_one_or_none_by_id(
+            data_id=exercise_id, session=session
+        )
+        try:
+            if exercise.is_time_based:
+                # Parse time format (MM:SS or seconds)
+                if ":" in message.text:
+                    minutes, seconds = message.text.split(":")
+                    result_value = float(minutes) * 60 + float(seconds)
+                else:
+                    result_value = float(message.text)
+            else:
+                result_value = float(message.text.replace(",", "."))
+        except ValueError:
+            await message.answer(
+                "❌ Некорректный формат. "
+                + (
+                    "Введите время в формате ММ:СС или в секундах."
+                    if exercise.is_time_based
+                    else "Введите числовое значение."
+                )
+            )
+            return
+
+        result_data = ProfileResultSubmitSchema(
+            exercise_id=exercise_id,
+            result_value=result_value,
+        )
+        new_result, validation_message = await UserProfileResultDAO.add_result_with_validation(
+            session=session,
+            user_id=user_id,
+            data=result_data,
+        )
+        if new_result:
+            # Success - show a nice confirmation and return to exercise view
+            formatted_value = result_value
+            if exercise.is_time_based:
+                minutes = int(result_value) // 60
+                seconds = int(result_value) % 60
+                formatted_value = f"{minutes}:{seconds:02d}"
+
+            await message.answer(
+                f"✅ Результат <b>{formatted_value} {exercise.unit.value}</b> "
+                f"для упражнения <b>{exercise.name}</b> успешно добавлен!"
+            )
+            await manager.switch_to(ProfileSG.exercise)
+        elif float(message.from_user.text) < 0:
+            await message.answer(
+                "❌ Введенное значение не может быть отрицательным.\n\n"
+                "Пожалуйста, введите результат в пределах допустимых значений"
+            )
+        # Error - show a friendly error message with guidance
+        elif "unrealistically high" in validation_message or "too high" in validation_message:
+            await message.answer(
+                "❌ Введенное значение слишком большое.\n\n"
+                "Пожалуйста, введите результат в пределах допустимых значений"
+            )
+        elif "unrealistically fast" in validation_message or "too low" in validation_message:
+            await message.answer(
+                "❌ Введенное значение слишком маленькое.\n\n"
+                "Пожалуйста, введите результат в пределах допустимых значений"
+            )
+        else:
+            await message.answer(
+                f"❌ {validation_message}\n\n"
+                f"Пожалуйста, проверьте введенное значение и попробуйте снова."
+            )
+
+    except Exception as e:
+        logger.error(f"Error adding result: {e}")
+        await message.answer(
+            "❌ Произошла ошибка при добавлении результата.\n\n"
+            "Пожалуйста, попробуйте снова или обратитесь к администратору."
+        )
+
+
 @connection(commit=False)
 async def get_exercise_history(dialog_manager: DialogManager, session: AsyncSession, **kwargs):
     """
@@ -233,6 +332,12 @@ async def get_exercise_history(dialog_manager: DialogManager, session: AsyncSess
     exercise_id = dialog_manager.dialog_data.get("selected_exercise_id")
     if not exercise_id:
         return {"exercise": None, "results": []}
+
+    user: User = await UserDAO.find_one_or_none_by_id(data_id=user_id, session=session)
+    if user and user.level and user.gender:
+        gender_standards = await ExerciseStandardDAO.get_gender_standards(
+            session=session, exercise_id=exercise_id, user_level=user.level, gender=user.gender
+        )
 
     exercise: ProfileExercise = await ProfileExerciseDAO.find_one_or_none_by_id(
         data_id=exercise_id, session=session
@@ -296,6 +401,7 @@ async def get_exercise_history(dialog_manager: DialogManager, session: AsyncSess
             "category": exercise.category_name,
         },
         "results": history_data,
+        "standards": gender_standards,
     }
     logger.debug(f"Exercise {exercise.name} for user {user_id} with history: {history_data}")
     return exercise_data
@@ -340,6 +446,7 @@ async def get_exercise_leaderboard(dialog_manager: DialogManager, session: Async
     return data
 
 
+# Button clicks handlers
 async def on_category_click(callback: CallbackQuery, widget, manager: DialogManager, item_id: str):
     """Handle category selection."""
     manager.dialog_data["selected_category_id"] = int(item_id)
@@ -360,6 +467,18 @@ async def on_leaderboard_click(callback: CallbackQuery, button, manager: DialogM
 async def on_biometrics_click(callback: CallbackQuery, button, manager: DialogManager):
     """Handle biometrics button click."""
     pass
+
+
+async def on_add_result_click(callback: CallbackQuery, button, manager: DialogManager):
+    """Handle add result button click."""
+    await manager.switch_to(ProfileSG.add_result)
+
+
+async def other_type_handler(message: Message, message_input: MessageInput, manager: DialogManager):
+    """
+    Handle non-text input when adding exercise results.
+    """
+    await message.answer("❌ Пожалуйста, введите числовое значение в виде текста!")
 
 
 profile_dialog = Dialog(
@@ -448,6 +567,7 @@ profile_dialog = Dialog(
             when=lambda data, *_: data.get("results")
             and len(data["results"]) > HISTORY_RECORD_PER_PAGE,
         ),
+        Button(Const("➕ Добавить результат"), id="add_result", on_click=on_add_result_click),
         Button(Const("📊 Лидерборд"), id="show_leaderboard", on_click=on_leaderboard_click),
         Button(
             Const("Назад к упражнениям"),
@@ -456,6 +576,31 @@ profile_dialog = Dialog(
         ),
         Button(Const("В главное меню"), id="to_main_menu", on_click=go_to_main_menu),
         state=ProfileSG.exercise,
+        getter=get_exercise_history,
+    ),
+    Window(
+        Format("<b>➕ Добавить результат для {exercise[name]}</b>\n"),
+        Format("Единица измерения: <b>{exercise[unit]}</b>\n\n"),
+        Format(
+            "Рекомендуемый диапазон значений: "
+            "от <b>{standards[min_value]}</b> до <b>{standards[max_value]}</b>\n\n",
+            when=lambda data, *_: data.get("standards")
+            and data["standards"].get("min_value") is not None
+            and data["standards"].get("max_value") is not None,
+        ),
+        Format(
+            "Введите результат в формате ММ:СС (например, 2:30) или в секундах (например, 150)\n\n",
+            when=lambda data, *_: data.get("exercise") and data["exercise"].get("is_time_based"),
+        ),
+        Format(
+            "Введите числовое значение (например, 75)\n\n",
+            when=lambda data, *_: data.get("exercise")
+            and not data["exercise"].get("is_time_based"),
+        ),
+        MessageInput(result_input_handler, content_types=[ContentType.TEXT]),
+        MessageInput(other_type_handler),
+        Back(Const("Назад к упражнению")),
+        state=ProfileSG.add_result,
         getter=get_exercise_history,
     ),
     Window(

@@ -2,6 +2,7 @@ import logging
 from typing import Any
 
 from sqlalchemy import Result, Select, Sequence, func, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.dao import BaseDAO
@@ -14,7 +15,13 @@ from src.database.models import (
     UserProfileResult,
 )
 from src.database.models.profile import ResultType
-from src.database.models.user import Gender
+from src.database.models.user import Gender, UserLevel
+from src.schemas.profile import (
+    ExerciseStandardFilter,
+    ProfileResultCompleteSchema,
+    ProfileResultSubmitSchema,
+    ProfileResultValidatedSchema,
+)
 from src.utils.profile import time_format_for_time_based_exercise
 
 logger = logging.getLogger(__name__)
@@ -67,6 +74,35 @@ class ProfileExerciseDAO(BaseDAO):
 
 class ExerciseStandardDAO(BaseDAO):
     model = ExerciseStandard
+
+    @classmethod
+    async def get_gender_standards(
+        cls, session: AsyncSession, exercise_id: int, user_level: UserLevel, gender: Gender
+    ) -> dict[str, float | None]:
+        """
+        Get gender-specific standards for a given exercise, user level, and gender.
+
+        Args:
+            session: Database session
+            exercise_id: ID of the exercise
+            user_level: User's level
+            gender: User's gender
+
+        Returns:
+            Dictionary with min_value and max_value for the specified gender
+        """
+        standard_filter = ExerciseStandardFilter(exercise_id=exercise_id, user_level=user_level)
+        standard: ExerciseStandard = await cls.find_one_or_none(
+            session=session, filters=standard_filter
+        )
+
+        if not standard:
+            return {"min_value": None, "max_value": None}
+
+        if gender == Gender.MALE:
+            return {"min_value": standard.male_min_value, "max_value": standard.male_max_value}
+        else:
+            return {"min_value": standard.female_min_value, "max_value": standard.female_max_value}
 
 
 class UserProfileResultDAO(BaseDAO):
@@ -187,6 +223,72 @@ class UserProfileResultDAO(BaseDAO):
         result = await session.execute(query)
         logger.debug(f"History for exercise {exercise_id} for user {user_id}: {result}")
         return result.scalars().all()
+
+    @classmethod
+    async def add_result_with_validation(
+        cls,
+        session: AsyncSession,
+        data: ProfileResultSubmitSchema,
+        user_id: int,
+    ) -> tuple[UserProfileResult | None, str]:
+        """
+        Add a new result with validation against exercise standards.
+
+        Args:
+            session: Database session
+            data: Result data
+            user_id: User's telegram ID
+
+        Returns:
+            Tuple of (added result, validation message)
+        """
+        user: User = await UserDAO.find_one_or_none_by_id(data_id=user_id, session=session)
+        if not user:
+            return None, "Пользователь не найден"
+
+        exercise: ProfileExercise = await ProfileExerciseDAO.find_one_or_none_by_id(
+            data_id=data.exercise_id, session=session
+        )
+        if not exercise:
+            return None, "Упражнение не найдено"
+
+        # Getting standards for exercise
+        gender_standards = await ExerciseStandardDAO.get_gender_standards(
+            session=session, exercise_id=data.exercise_id, user_level=user.level, gender=user.gender
+        )
+        exercise_info = {
+            "is_time_based": exercise.is_time_based,
+            "result_type": exercise.result_type,
+            "unit": exercise.unit,
+        }
+
+        logger.debug(f"Exercise info: {exercise_info}")
+        logger.debug(f"Gender standards: {gender_standards}")
+        logger.debug(f"Result value to validate: {data.result_value}")
+
+        try:
+            validated_data = ProfileResultValidatedSchema(
+                **data.model_dump(),
+                user_id=user_id,
+                gender_standards=gender_standards,
+                exercise_info=exercise_info,
+            )
+            logger.info(f"Validation passed for value {validated_data.result_value}")
+        except ValueError as e:
+            return None, str(e)
+
+        try:
+            data_to_add = ProfileResultCompleteSchema(
+                user_id=user_id,
+                exercise_id=validated_data.exercise_id,
+                result_value=validated_data.result_value,
+                date=validated_data.date,
+            )
+            new_result = await cls.add(session=session, data=data_to_add)
+            return new_result, "Результат успешно добавлен"
+        except SQLAlchemyError as e:
+            logger.error(f"Error adding profile result {e}")
+            return None, f"Database error: {e}"
 
 
 class LeaderboardDAO(BaseDAO):
@@ -333,7 +435,6 @@ class LeaderboardDAO(BaseDAO):
                     .where(
                         UserProfileResult.exercise_id == exercise_id,
                         User.gender == user.gender,
-                        # Get users with better times (smaller values)
                         UserProfileResult.result_value < user_best.best_result,
                     )
                 )
@@ -345,7 +446,6 @@ class LeaderboardDAO(BaseDAO):
                     .where(
                         UserProfileResult.exercise_id == exercise_id,
                         User.gender == user.gender,
-                        # Get users with better results (larger values)
                         UserProfileResult.result_value > user_best.best_result,
                     )
                 )
