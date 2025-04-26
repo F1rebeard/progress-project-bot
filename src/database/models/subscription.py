@@ -25,6 +25,8 @@ class SubscriptionStatus(str, enum.Enum):
 
 
 class Subscription(Base):
+    __tablename__ = "subscriptions"
+
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.telegram_id", ondelete="CASCADE"),
         primary_key=True,

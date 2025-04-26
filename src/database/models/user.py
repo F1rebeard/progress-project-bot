@@ -36,6 +36,8 @@ class Gender(str, enum.Enum):
 
 
 class User(Base):
+    __tablename__ = "users"
+
     telegram_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, unique=True)
     username: Mapped[str | None] = mapped_column(String(32), unique=True, nullable=True)
     first_name: Mapped[str | None] = mapped_column(String(64), nullable=True)

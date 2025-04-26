@@ -11,6 +11,8 @@ if TYPE_CHECKING:
 
 
 class Workout(Base):
+    __tablename__ = "workouts"
+
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     description: Mapped[str] = mapped_column(Text, nullable=True)
     date: Mapped[Date] = mapped_column(Date, nullable=False)
@@ -26,6 +28,8 @@ class Workout(Base):
 
 
 class WorkoutResult(Base):
+    __tablename__ = "workout_results"
+
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     result: Mapped[str] = mapped_column(Text, nullable=False)
     workout_id: Mapped[int] = mapped_column(

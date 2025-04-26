@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 async def set_commands():
-    commands = [BotCommand(command="start", description="Запуск или перезапуска бота")]
+    commands = [BotCommand(command="progress", description="Поехали! 🚀")]
     await bot.set_my_commands(commands, BotCommandScopeDefault())
 
 

@@ -21,6 +21,8 @@ class PaymentStatus(str, enum.Enum):
 
 
 class Payment(Base):
+    __tablename__ = "payments"
+
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     sub_id: Mapped[int] = mapped_column(
         ForeignKey("subscriptions.user_id", ondelete="SET NULL"), nullable=False

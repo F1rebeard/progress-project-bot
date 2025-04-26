@@ -53,10 +53,5 @@ def connection(isolation_level=None, commit: bool = True):
 class Base(AsyncAttrs, DeclarativeBase):
     __abstract__ = True
 
-    @classmethod
-    @property
-    def __tablename__(cls) -> str:
-        return cls.__name__.lower() + "s"
-
     def to_dict(self) -> dict:
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}

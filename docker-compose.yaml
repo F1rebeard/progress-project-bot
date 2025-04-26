@@ -1,4 +1,4 @@
-name: "telegram_bot_db"
+name: "progress-project-bot"
 
 services:
 
@@ -10,7 +10,7 @@ services:
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
-      POSTGRES_DB: bot_db
+      POSTGRES_DB: progress_db
     volumes:
       - "dev_database:/var/lib/postgresql/dev_data"
 

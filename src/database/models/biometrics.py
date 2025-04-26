@@ -10,6 +10,10 @@ if TYPE_CHECKING:
 
 
 class Biometric(Base):
+    """ """
+
+    __tablename__ = "biometrics"
+
     user_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("users.telegram_id"), primary_key=True, unique=True
     )

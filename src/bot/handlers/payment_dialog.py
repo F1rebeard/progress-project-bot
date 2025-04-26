@@ -122,7 +122,7 @@ async def process_new_subscription(
         f"Выбранный тип подписки: {chosen_plan} для пользователя с 🆔 {callback.from_user.id}"
     )
 
-    # Create new user
+    # Create a new user
     new_user_data = UserCreateSchema(telegram_id=telegram_id, username=username, role=UserRole.USER)
     new_user: User = await UserDAO.add(session=session, data=new_user_data)
 
@@ -143,6 +143,8 @@ async def process_new_subscription(
         end_date=end_date,
     )
     new_sub: Subscription = await SubscriptionDAO.add(session=session, data=new_sub_data)
+
+    start_date = None
     if is_start_program:
         start_date = await set_start_program_date_for_new_subscription(
             telegram_id=telegram_id, subscription_type=chosen_plan["name"], session=session

@@ -16,10 +16,11 @@ class MeasurementUnit(str, enum.Enum):
     KILOGRAMS = "кг"
     REPS = "пвт"
     METERS = "м"
-    SECONDS = "с"
+    SECONDS = "сек"
     MINUTES = "мин"
     CALORIES = "кал"
     WATTS = "ватт"
+    COEFFICIENT = "слр"
 
 
 class ResultType(str, enum.Enum):
@@ -95,7 +96,7 @@ class ProfileExercise(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<Exercise(name='{self.name}', category='{self.category.name}')>"
+        return f"<Exercise(name='{self.name}')>"
 
 
 class ExerciseStandard(Base):

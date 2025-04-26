@@ -1,7 +1,7 @@
 from typing import Any
 
 from aiogram import Router
-from aiogram.filters import CommandStart
+from aiogram.filters import Command
 from aiogram.types import Message
 from sqlalchemy import Date
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -78,7 +78,7 @@ async def check_user_status(
     return user_name, user_status, sub_status, sub_type, sub_end_date
 
 
-@start_command_router.message(CommandStart())
+@start_command_router.message(Command("progress"))
 async def cmd_start(message: Message):
     """
     Handles the /start command, determining the user's status and responding accordingly.
