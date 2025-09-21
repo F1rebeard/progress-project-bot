@@ -12,7 +12,6 @@ from aiogram_dialog.widgets.text import Const, Format, List
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.bot.handlers.workout_calendar import go_to_main_menu
-from src.constants.biometrics import MAX_WEIGHT, MIN_WEIGHT
 from src.constants.sinkler_coefficients import MAX_REPS, MIN_REPS
 from src.dao import (
     BiometricDAO,
@@ -41,6 +40,8 @@ profile_router = Router()
 
 HISTORY_RECORD_PER_PAGE: int = 20
 
+MAX_WEIGHT = 1
+MIN_WEIGHT = 1
 
 class ProfileSG(StatesGroup):
     profile = State()

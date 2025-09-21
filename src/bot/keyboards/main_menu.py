@@ -11,7 +11,7 @@ def get_main_menu_keyboard():
             InlineKeyboardButton(text="📋 Тренировки", callback_data="workouts"),
         ],
         [
-            InlineKeyboardButton(text="📊 Тесты", callback_data="tests"),
+            InlineKeyboardButton(text="📊 Тесты", callback_data="test_weeks"),
             InlineKeyboardButton(text="👤 Профиль", callback_data="profile"),
         ],
         [

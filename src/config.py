@@ -1,4 +1,3 @@
-import logging
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
@@ -8,10 +7,9 @@ from dotenv import load_dotenv
 from pydantic import PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from src.logger import setup_logging
+from loguru import logger
 
-setup_logging()
-logger = logging.getLogger(__name__)
+
 load_dotenv()
 
 

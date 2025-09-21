@@ -1,6 +1,6 @@
-import logging
 from typing import Generic, TypeVar
 
+from loguru import logger
 from pydantic import BaseModel
 from sqlalchemy import Sequence, delete, select, update
 from sqlalchemy.exc import SQLAlchemyError
@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.config import Base
 
-logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=Base)
 

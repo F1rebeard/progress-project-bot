@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.dao import UserDAO
 from src.database.models.subscription import SubscriptionType
-from src.utils.start_workouts import calculate_next_monday, calculate_start_program_day
+from src.schemas.start_workouts import calculate_next_monday, calculate_start_program_day
 
 logger = logging.getLogger(__name__)
 

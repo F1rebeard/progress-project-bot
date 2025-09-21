@@ -9,6 +9,4 @@ __all__ = [
     "PaymentCreateSchema",
     "SubscriptionCreateSchema",
     "SubscriptionReadSchema",
-    "UserCreateSchema",
-    "UserUpdateSchema",
 ]

@@ -1,6 +1,2 @@
-MIN_WEIGHT: int = 30
-MAX_WEIGHT: int = 200
-MIN_HEIGHT: int = 120
-MAX_HEIGHT: int = 250
-MIN_AGE: int = 16
-MAX_AGE: int = 100
+
+

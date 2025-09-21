@@ -78,3 +78,9 @@ class User(Base):
     profile_results: Mapped[list["UserProfileResult"]] = relationship(
         "UserProfileResult", back_populates="user", cascade="all, delete-orphan"
     )
+    setting: Mapped["UserSetting"] = relationship(
+        "UserSetting",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan"
+    )

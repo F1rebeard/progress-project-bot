@@ -6,6 +6,7 @@ from aiogram import F, Router
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.bot.filters import ActiveSubscriptionFilter
 from src.bot.handlers.workout_calendar import extract_protocol_number
 from src.bot.keyboards.main_menu import get_main_menu_button
 from src.constants.warm_ups import DEFAULT_WARMUP, WARMUPS
@@ -21,29 +22,7 @@ workout_of_the_day_router = Router()
 
 
 async def show_error_message(callback: CallbackQuery, message: str):
-    """
-    Show an error message to the user.
-    """
-    await callback.message.edit_text(
-        message,
-        reply_markup=get_main_menu_button(),
-    )
-
-
-async def show_subscription_required(callback: CallbackQuery, user: User):
-    """
-    Show a message indicating subscription is required.
-    """
-    subscription_status = (
-        "истекла"
-        if not user.subscription or user.subscription.status.value == "Истекла"
-        else "заморожена"
-    )
-    await callback.message.edit_text(
-        f"⚠️ Ваша подписка {subscription_status}. "
-        "Для доступа к тренировкам необходимо обновить или разморозить подписку.",
-        reply_markup=get_main_menu_button(),
-    )
+    await callback.message.edit_text(message, reply_markup=get_main_menu_button())
 
 
 async def show_no_workouts_message(callback: CallbackQuery):
@@ -69,7 +48,7 @@ async def find_start_workout(
         today: Current date
 
     Returns:
-        Dictionary with workout information including:
+        Dictionary with workout information including
         - workout: The found START workout or None
         - day_number: The day number in the START program
         - selected_date: The date of the workout
@@ -100,12 +79,13 @@ async def find_start_workout(
     return result
 
 
-async def find_regular_workout(
+async def _find_regular_workout(
     session: AsyncSession, user: User, today: datetime.date
 ) -> dict[str, Any]:
     """
     Find a regular workout for today or in the next few days.
     """
+
     result = {"workout": None, "selected_date": today, "is_future": False}
     regular_workout = await WorkoutDAO.get_workout_for_date(
         session=session,
@@ -167,7 +147,7 @@ async def find_appropriate_workout(
             return result
 
     # If no START workout found or user is not on START program, try regular workouts
-    regular_result = await find_regular_workout(session, user, today)
+    regular_result = await _find_regular_workout(session, user, today)
     if regular_result["workout"]:
         result["found"] = True
         result["workout"] = regular_result["workout"]
@@ -178,7 +158,10 @@ async def find_appropriate_workout(
 
 
 async def prepare_start_workout_message(workout_data: dict[str, Any]) -> dict[str, Any]:
-    """Prepare message and buttons for a START workout."""
+    """
+    Prepare a message and buttons for a START workout.
+    """
+
     workout_date = workout_data["selected_date"].strftime("%d.%m.%Y")
     date_text = f"Сегодня {workout_date}" if not workout_data["is_future"] else f"{workout_date}"
     day_number = workout_data["day_number"]
@@ -211,7 +194,7 @@ async def prepare_start_workout_message(workout_data: dict[str, Any]) -> dict[st
 
 async def prepare_regular_workout_message(workout_data: dict[str, Any]) -> dict[str, Any]:
     """
-    Prepare message and buttons for a regular workout.
+    Prepare a message and buttons for a regular workout.
     """
     workout_date = workout_data["selected_date"].strftime("%d.%m.%Y")
     date_text = f"Сегодня {workout_date}" if not workout_data["is_future"] else f"{workout_date}"
@@ -288,7 +271,10 @@ async def show_warmup_for_workout(callback: CallbackQuery):
     )
 
 
-@workout_of_the_day_router.callback_query(F.data == "workout_of_the_day")
+@workout_of_the_day_router.callback_query(
+    F.data == "workout_of_the_day",
+    ActiveSubscriptionFilter(silent=False)
+)
 @connection(commit=False)
 async def show_workout_of_the_day(callback: CallbackQuery, session: AsyncSession):
     """
@@ -296,7 +282,7 @@ async def show_workout_of_the_day(callback: CallbackQuery, session: AsyncSession
     Shows today's workout or the next upcoming workout.
     """
     user_id = callback.from_user.id
-    user = await UserDAO.find_one_or_none_by_id(data_id=user_id, session=session)
+    user: User = await UserDAO.find_one_or_none_by_id(data_id=user_id, session=session)
     if not user:
         logger.error(f"User with id {user_id} not found")
         await show_error_message(
@@ -304,14 +290,10 @@ async def show_workout_of_the_day(callback: CallbackQuery, session: AsyncSession
         )
         return
 
-    # Check subscription status
-    if not user.subscription or user.subscription.status.value in ["Истекла", "Заморожена"]:
-        await show_subscription_required(callback, user)
-        return
     today = datetime.now().date()
     workout_data = await find_appropriate_workout(session, user, today)
     if not workout_data["found"]:
         await show_no_workouts_message(callback)
         return
-    # Show the found workout
+
     await show_workout_details(callback, workout_data)

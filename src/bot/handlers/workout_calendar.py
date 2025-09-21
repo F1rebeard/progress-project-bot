@@ -17,10 +17,13 @@ from aiogram_dialog.widgets.kbd.calendar_kbd import (
     CalendarYearsView,
 )
 from aiogram_dialog.widgets.text import Const, Format, Text
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.bot.filters import ActiveSubscriptionFilter
 from src.bot.handlers.main_menu import show_main_menu
 from src.constants.warm_ups import DEFAULT_WARMUP, WARMUPS
-from src.dao import StartWorkoutDAO, UserDAO, WorkoutDAO
+from src.dao import StartWorkoutDAO, UserDAO, WorkoutDAO, UserSettingDAO
+from src.database.config import connection
 from src.database.models import User, Workout
 from src.database.models.subscription import SubscriptionType
 
@@ -35,24 +38,23 @@ class WorkoutCalendarSG(StatesGroup):
 
 class WorkoutDateText(Text):
     """
-    Rendering the date buttons.
+    Show the user's chosen workout-day emoji, or the day the number.
     """
-
     async def _render_text(self, data: dict[str, Any], manager: DialogManager) -> str:
         if data["date"] in data["data"].get("workout_dates", []):
-            return "🏋️"
+            return data["workout_day_emoji"]
         return f"{data['date'].day}"
 
 
 class WorkoutTodayText(Text):
     """
-    Rendering the current day.
+    Show the user's chosen ‘today’ icon depending on whether
+    there's a workout today.
     """
-
     async def _render_text(self, data: dict[str, Any], manager: DialogManager) -> str:
         if data["date"] in data["data"].get("workout_dates", []):
-            return "🔴"
-        return "📅"
+            return data["today_with_workout_emoji"]
+        return data["today_without_workout_emoji"]
 
 
 class HeaderText(Text):
@@ -111,8 +113,12 @@ class CustomCalendar(Calendar):
         }
 
 
-@workout_calendar_router.callback_query(F.data == "workouts")
+@workout_calendar_router.callback_query(
+    F.data == "workouts",
+    ActiveSubscriptionFilter(silent=False)
+)
 async def show_workout_calendar(callback: CallbackQuery, dialog_manager: DialogManager):
+
     await dialog_manager.start(WorkoutCalendarSG.calendar)
 
 
@@ -167,18 +173,16 @@ async def go_to_main_menu(callback: CallbackQuery, button, dialog_manager: Dialo
 
     await callback.message.edit_text(text=menu_text, reply_markup=get_main_menu_keyboard())
 
-
-async def get_calendar_data(dialog_manager: DialogManager, **kwargs) -> dict:
+@connection(commit=False)
+async def get_calendar_data(dialog_manager: DialogManager, session: AsyncSession, **kwargs) -> dict:
     """
-    Getting data for current user available workouts according to his subscription date range.
+    Getting data for current users available workouts according to his subscription date range.
     The date range is 2 weeks before today and till the subscription last day.
 
     Also getting the data for START workouts with the same date range.
     """
     user_id = dialog_manager.event.from_user.id
-    session = dialog_manager.middleware_data.get("session_without_commit")
     user = await UserDAO.find_one_or_none_by_id(data_id=user_id, session=session)
-
     if not user or not user.subscription:
         return {}
 
@@ -192,6 +196,9 @@ async def get_calendar_data(dialog_manager: DialogManager, **kwargs) -> dict:
 
     # Create the list of dates with workouts
     workout_dates = [w.date for w in workouts]
+
+    # Custom emojis for user calendar
+    setting = await UserSettingDAO.get_for_user(user_id=user_id, session=session)
 
     # Workout for START program
     is_start_program = user.subscription.subscription_type in [
@@ -211,10 +218,19 @@ async def get_calendar_data(dialog_manager: DialogManager, **kwargs) -> dict:
         "workout_dates": workout_dates,
         "min_date": two_weeks_ago,
         "max_date": subscription_end,
+        "calendar_emoji": setting.calendar_emoji.value,
+        "workout_date_emoji": setting.workout_date_emoji.value,
+        "today_with_workout_emoji": setting.today_with_workout_emoji.value,
+        "today_without_workout_emoji": setting.today_without_workout_emoji.value,
     }
 
 
-async def get_workout_details(dialog_manager: DialogManager, **kwargs) -> dict[str, Any]:
+@connection(commit=False)
+async def get_workout_details(
+        dialog_manager: DialogManager,
+        session: AsyncSession,
+        **kwargs
+) -> dict[str, Any]:
     """
     Selected workout date workout information getter.
     """
@@ -223,7 +239,6 @@ async def get_workout_details(dialog_manager: DialogManager, **kwargs) -> dict[s
     if not selected_date:
         return {"workout": None}
 
-    session = dialog_manager.middleware_data.get("session_without_commit")
 
     is_start_program = dialog_manager.dialog_data.get("is_start_program", False)
     if is_start_program:
@@ -241,9 +256,11 @@ async def get_workout_details(dialog_manager: DialogManager, **kwargs) -> dict[s
     if not user:
         return {"workout": None, "is_start_program": False}
 
-    # Get workout for this date and user's level
+    # Get a workout for this date and user's level
     workout: Workout | None = await WorkoutDAO.get_workout_for_date(
-        session=session, workout_date=selected_date, level=user.level
+        session=session,
+        workout_date=selected_date,
+        level=user.level
     )
     if workout:
         dialog_manager.dialog_data["workout"] = workout
@@ -256,7 +273,7 @@ async def get_workout_details(dialog_manager: DialogManager, **kwargs) -> dict[s
 
 async def get_warmup_details(dialog_manager: DialogManager, **kwargs) -> dict[str, Any]:
     """
-    Get data for warm-up details dialog window to show it in text.
+    Get data for a warm-up details dialog window to show it in text.
     """
     warmup_text = dialog_manager.dialog_data.get("warmup_text", DEFAULT_WARMUP)
     protocol_number = dialog_manager.dialog_data.get("protocol_number", "Unknown")
@@ -275,7 +292,6 @@ def extract_protocol_number(workout_description: str) -> int | None:
     if match:
         return int(match.group(1))
     return None
-
 
 async def show_warmup(
     callback: CallbackQuery,
@@ -311,7 +327,7 @@ async def show_warmup(
 
 workout_calendar_dialog = Dialog(
     Window(
-        Const("📅 Календарь тренировок"),
+        Format("{calendar_emoji} <b>Календарь тренировок</b>"),
         Const("Выберите дату, чтобы увидеть тренировку:"),
         CustomCalendar(
             id="workout_calendar",

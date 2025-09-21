@@ -5,7 +5,7 @@ from sqlalchemy import Boolean, CheckConstraint, DateTime, Enum, Float, ForeignK
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database.config import Base
-from src.database.models.user import User, UserLevel
+from src.database.models.user import UserLevel, User
 
 
 class MeasurementUnit(str, enum.Enum):
@@ -148,5 +148,5 @@ class UserProfileResult(Base):
     date: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.now())
 
     # Relations
-    user: Mapped["User"] = relationship("User", back_populates="profile_results")
+    user: Mapped[User] = relationship("User", back_populates="profile_results")
     exercise: Mapped["ProfileExercise"] = relationship("ProfileExercise", back_populates="results")

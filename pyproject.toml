@@ -8,8 +8,10 @@ dependencies = [
     "aiogram-dialog>=2.3.1",
     "alembic>=1.14.1",
     "asyncpg>=0.30.0",
-    "pydantic>=2.10.6",
-    "pydantic-settings>=2.7.1",
+    "email-validator>=2.2.0",
+    "loguru>=0.7.3",
+    "pydantic==2.11.4",
+    "pydantic-settings==2.9.1",
     "python-dotenv>=1.0.1",
     "sqlalchemy>=2.0.38",
 ]

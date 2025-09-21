@@ -16,14 +16,6 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.bot.keyboards.main_menu import get_main_menu_button
-from src.constants.biometrics import (
-    MAX_AGE,
-    MAX_HEIGHT,
-    MAX_WEIGHT,
-    MIN_AGE,
-    MIN_HEIGHT,
-    MIN_WEIGHT,
-)
 from src.dao import BiometricDAO, SubscriptionDAO, UserDAO
 from src.database.config import connection
 from src.database.models import Subscription
@@ -111,7 +103,7 @@ async def first_name_handler(
     manager: DialogManager,
 ):
     """
-    Validates and saves users first name to dialog_manager data.
+    Validates and saves user first name to dialog_manager data.
     """
     name_regex = r"^[A-ZА-ЯЁ][a-zа-яё]{2,25}$"
     if re.match(name_regex, message.text):
@@ -123,7 +115,7 @@ async def first_name_handler(
 
 async def last_name_handler(message: Message, message_input: MessageInput, manager: DialogManager):
     """
-    Validates and saves users last name to dialog_manager data.
+    Validates and saves user last name to dialog_manager data.
     """
 
     surname_regex = r"^[A-ZА-ЯЁ][a-zа-яё]{2,30}$"
@@ -143,7 +135,7 @@ async def email_handler(
 ):
     """
     Validates and saves user email to dialog_manager data.
-    If user subscription_type is in progress, then switch to level choosing, else skip to gender.
+    If user subscription_type is in progress then switch to level choosing, else skip to gender.
     """
 
     telegram_id = int(message.from_user.id)
@@ -197,18 +189,20 @@ async def birthday_handler(message: Message, message_input: MessageInput, manage
     """
     Validates and saves user's birthday to dialog_manager data.
     """
+    min_age = 16
+    max_age = 80
     try:
         birthday = datetime.strptime(message.text, "%d.%m.%Y").date()
         age = (datetime.now().date() - birthday).days // 365
 
         # Age interval for users
-        if MIN_AGE <= age <= MAX_AGE:
+        if min_age <= age <= max_age:
             manager.dialog_data["birthday"] = birthday
             await manager.switch_to(RegistrationSG.height)
         else:
             await message.answer("Введи корректную дату рождения, пожалуйста")
     except (TypeError, ValueError):
-        logger.debug(f"Дата рождения, введенная пользователем {message.text}")
+        logger.info(f"Дата рождения, введенная пользователем {message.text}")
         await message.answer("Введите в корректном формате ДД.ММ.ГГГГ.")
     except Exception as e:
         logger.error(f"Error birthday date enter: {e}")
@@ -218,21 +212,23 @@ async def height_handler(message: Message, message_input: MessageInput, manager:
     """
     Validates and saves user's height to dialog_manager data.
     """
+    min_height = 120
+    max_height = 220
     try:
         height = int(message.text)
 
-        if MIN_HEIGHT <= height <= MAX_HEIGHT:
+        if min_height <= height <= max_height:
             manager.dialog_data["height"] = height
             await manager.switch_to(RegistrationSG.weight)
         else:
             await message.answer(
-                f"Рост должен быть от {MIN_HEIGHT} до {MAX_HEIGHT} см. Пожалуйста, введи корректное "
-                f"значение."
+                "Рост должен быть от 120 до 220 см. Пожалуйста, введи корректное значение."
             )
     except ValueError:
         await message.answer(
             "Пожалуйста, введите корректное числовое значение для роста в сантиметрах."
         )
+        logger.info(f"User with id {message.from_user.id} enter {message.text} during height")
     except Exception as e:
         logger.error(f"Error in height handler during registration: {e}")
 
@@ -241,16 +237,17 @@ async def weight_handler(message: Message, message_input: MessageInput, manager:
     """
     Validates and saves user's weight to dialog_manager data.
     """
+    min_weight = 30
+    max_weight = 160
 
     try:
         weight = float(message.text.replace(",", "."))
-        if MIN_WEIGHT <= weight <= MAX_WEIGHT:
+        if min_weight <= weight <= max_weight:
             manager.dialog_data["weight"] = weight
             await manager.switch_to(RegistrationSG.confirmation)
         else:
             await message.answer(
-                f"Вес должен быть от {MAX_WEIGHT} до {MAX_WEIGHT} кг. Пожалуйста, введи корректное "
-                f"значение."
+                "Вес должен быть от 30 до 200 кг. Пожалуйста, введите корректное значение."
             )
     except ValueError:
         await message.answer(

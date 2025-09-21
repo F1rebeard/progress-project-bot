@@ -8,21 +8,26 @@ from src.database.models.profile import (
     ProfileExercise,
     UserProfileResult,
 )
-from src.database.models.start_workouts import StartWorkout
+from src.database.models.settings import  GlobalSetting, UserSetting
+from src.database.models.workouts_start_program import StartWorkout
 from src.database.models.subscription import Subscription
+from src.database.models.workouts_test_weeks import TestWorkouts
 from src.database.models.user import User
-from src.database.models.workout import Workout, WorkoutResult
+from src.database.models.workouts import Workout, WorkoutResult
 
 __all__ = [
     "Base",
     "Biometric",
     "CuratorUser",
     "ExerciseStandard",
+    "GlobalSetting",
     "Payment",
     "ProfileCategory",
     "ProfileExercise",
+    "UserSetting",
     "StartWorkout",
     "Subscription",
+    "TestWorkouts",
     "User",
     "UserProfileResult",
     "Workout",

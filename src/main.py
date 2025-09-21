@@ -1,10 +1,10 @@
 import asyncio
 import locale
-import logging
 
 from aiogram.exceptions import TelegramBadRequest, TelegramNotFound
 from aiogram.types import BotCommand, BotCommandScopeDefault
 from aiogram_dialog import setup_dialogs
+from loguru import logger
 
 from src.bot.handlers.main_menu import main_menu_router
 from src.bot.handlers.payment_dialog import (
@@ -12,7 +12,7 @@ from src.bot.handlers.payment_dialog import (
     subscription_selection_dialog,
 )
 from src.bot.handlers.profile_dialog import profile_dialog, profile_router
-from src.bot.handlers.registration_dialog import (
+from src.bot.handlers.new_registration_dialog import (
     registration_dialog,
     registration_router,
 )
@@ -24,18 +24,17 @@ from src.bot.handlers.workout_calendar import (
 from src.bot.handlers.workout_of_the_day import workout_of_the_day_router
 from src.bot.handlers.workouts_for_start_program import start_program_router
 from src.config import admins, bot, dp
-from src.logger import setup_logging
-from src.middleware.database_middleware import (
-    DatabaseMiddlewareWithCommit,
-    DatabaseMiddlewareWithoutCommit,
-)
+from src.logger_config import setup_logging
+
 
 setup_logging()
-logger = logging.getLogger(__name__)
 
 
 async def set_commands():
-    commands = [BotCommand(command="progress", description="Поехали! 🚀")]
+    commands = [
+        BotCommand(command="progress", description="Поехали! 🚀"),
+        BotCommand(command="settings", description="Настройки ⚙️"),
+    ]
     await bot.set_my_commands(commands, BotCommandScopeDefault())
 
 
@@ -45,10 +44,10 @@ async def start_bot():
         try:
             await bot.send_message(admin_id, "Я запущен 🥳")
         except TelegramNotFound:
-            logging.error(f"Чат с {admin_id} не найден!")
+            logger.error(f"Чат с {admin_id} не найден!")
         except TelegramBadRequest:
-            logging.error(f"Чат с {admin_id} не найден!")
-        logging.info("Бот успешно запущен!")
+            logger.error(f"Чат с {admin_id} не найден!")
+        logger.info("Бот успешно запущен!")
 
 
 async def stop_bot():
@@ -56,10 +55,10 @@ async def stop_bot():
         try:
             await bot.send_message(admin_id, "Я остановлен!")
         except TelegramNotFound:
-            logging.error(f"Чат с {admin_id} не найден!")
+            logger.error(f"Чат с {admin_id} не найден!")
         except TelegramBadRequest:
-            logging.error(f"Чат с {admin_id} не найден!")
-    logging.info("Бот остановлен!")
+            logger.error(f"Чат с {admin_id} не найден!")
+    logger.info("Бот остановлен!")
 
 
 async def main():
@@ -70,10 +69,6 @@ async def main():
         logger.info("Locale установлен в русский режим.")
     except locale.Error:
         logger.warning("Не удалось установить Locale в русский режим")
-
-    # Middleware connection
-    dp.update.middleware.register(DatabaseMiddlewareWithoutCommit())
-    dp.update.middleware.register(DatabaseMiddlewareWithCommit())
 
     # Functions register
     dp.startup.register(start_bot)
